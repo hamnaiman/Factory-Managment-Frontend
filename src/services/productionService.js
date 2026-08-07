@@ -1,10 +1,4 @@
-import axios from "axios";
-
-// Configured Axios Instance ensuring Cookie-Based Auth works across requests
-const api = axios.create({
-  baseURL: "http://localhost:5000/api",
-  withCredentials: true,
-});
+import api from "./api";
 
 // 1. Create Production Run
 export const createProductionRun = async (payload) => {
@@ -12,7 +6,7 @@ export const createProductionRun = async (payload) => {
   return response.data;
 };
 
-// 2. Fetch Production Runs (with optional search, filter, and pagination params)
+// 2. Fetch Production Runs
 export const getProductionRuns = async (params = {}) => {
   const response = await api.get("/production", { params });
   return response.data;
@@ -30,7 +24,7 @@ export const updateProductionRun = async (id, payload) => {
   return response.data;
 };
 
-// 5. Cancel / Delete Production Run
+// 5. Delete Production Run
 export const deleteProductionRun = async (id) => {
   const response = await api.delete(`/production/${id}`);
   return response.data;
