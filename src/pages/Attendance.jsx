@@ -5,6 +5,7 @@ import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import AttendanceTable from "../components/AttendanceTable";
 import AttendanceSummary from "../components/AttendanceSummary";
+import { addPayment } from "../services/paymentService";
 
 import {
   Search,
@@ -21,6 +22,7 @@ function Attendance() {
   const [attendance, setAttendance] = useState([]);
   const [search, setSearch] = useState("");
   const [attendanceSaved, setAttendanceSaved] = useState(false);
+  const [payments, setPayments] = useState({});
 
   const loadWorkers = async () => {
     try {
@@ -69,17 +71,38 @@ function Attendance() {
     });
   };
 
-  const handleSaveAttendance = async () => {
-    try {
-      console.log("Attendance Data =>", attendance);
-      const response = await markAttendance(attendance);
-      console.log(response.data);
-      toast.success("Attendance saved successfully");
-      await checkTodayAttendance();
-    } catch (error) {
-      console.log(error.response?.data);
+ const handleSaveAttendance = async () => {
+  try {
+    // Attendance Save
+    await markAttendance(attendance);
+
+    // Payments Save (Optional)
+    const paymentList = Object.values(payments);
+
+    for (const payment of paymentList) {
+      if (
+        payment.payToday &&
+        payment.amount &&
+        Number(payment.amount) > 0
+      ) {
+        await addPayment({
+          worker: payment.worker,
+          amount: Number(payment.amount),
+          paymentType: payment.paymentType,
+          paymentMethod: "Cash",
+          remark: "Paid while marking attendance",
+        });
+      }
     }
-  };
+
+    toast.success("Attendance saved successfully");
+
+    await checkTodayAttendance();
+  } catch (error) {
+    console.log(error);
+    toast.error("Failed to save attendance");
+  }
+};
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-100 flex">
@@ -136,10 +159,12 @@ function Attendance() {
           {/* Attendance Table */}
           <div className="w-full overflow-x-auto bg-white rounded-3xl border border-slate-200 shadow-xs">
             <AttendanceTable
-              workers={workers}
-              attendance={attendance}
-              search={search}
-              onStatusChange={handleStatusChange}
+                workers={workers}
+  attendance={attendance}
+  search={search}
+  onStatusChange={handleStatusChange}
+  payments={payments}
+  setPayments={setPayments}
             />
           </div>
 
@@ -159,6 +184,7 @@ function Attendance() {
               <AttendanceSummary
                 workers={workers}
                 attendance={attendance}
+                 payments={payments}
               />
             </div>
           )}

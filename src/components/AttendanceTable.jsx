@@ -1,8 +1,10 @@
 function AttendanceTable({
-  workers,
+   workers,
   attendance,
   search,
   onStatusChange,
+  payments,
+  setPayments,
 }) {
   const filteredWorkers = workers.filter((worker) =>
     worker.name.toLowerCase().includes(search.toLowerCase())
@@ -18,6 +20,18 @@ function AttendanceTable({
 
   const getStatus = (workerId) =>
   attendance.find((item) => item.worker === workerId)?.status || "";
+  
+  const handlePaymentChange = (workerId, field, value) => {
+  setPayments((prev) => ({
+    ...prev,
+    [workerId]: {
+      ...prev[workerId],
+      worker: workerId,
+      [field]: value,
+    },
+  }));
+};
+
   return (
     <>
       {/* ================= Desktop / Tablet ================= */}
@@ -35,6 +49,9 @@ function AttendanceTable({
               <div className="col-span-5 text-center">
                 Attendance
               </div>
+              <div className="col-span-3 text-center">
+  Payment
+</div>
             </div>
 
             {/* Rows */}
@@ -113,6 +130,65 @@ function AttendanceTable({
                     </label>
                   </div>
                 </div>
+
+                <div className="col-span-3">
+
+  <label className="flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={payments[worker._id]?.payToday || false}
+      onChange={(e) =>
+        handlePaymentChange(
+          worker._id,
+          "payToday",
+          e.target.checked
+        )
+      }
+    />
+
+    <span>Pay Today</span>
+  </label>
+
+  {payments[worker._id]?.payToday && (
+    <div className="mt-2 space-y-2">
+
+      <input
+        type="number"
+        placeholder="Amount"
+        value={payments[worker._id]?.amount || ""}
+        onChange={(e) =>
+          handlePaymentChange(
+            worker._id,
+            "amount",
+            e.target.value
+          )
+        }
+        className="w-full rounded-lg border p-2"
+      />
+
+      <select
+        value={
+          payments[worker._id]?.paymentType ||
+          "Salary"
+        }
+        onChange={(e) =>
+          handlePaymentChange(
+            worker._id,
+            "paymentType",
+            e.target.value
+          )
+        }
+        className="w-full rounded-lg border p-2"
+      >
+        <option value="Salary">Salary</option>
+        <option value="Advance">Advance</option>
+      </select>
+
+    </div>
+  )}
+
+</div>
+
               </div>
             ))}
           </div>

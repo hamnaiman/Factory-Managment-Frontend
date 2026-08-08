@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 
+import { getPayments } from "../services/paymentService";
+
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 
@@ -27,6 +29,7 @@ function AttendanceHistory() {
 
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [payments, setPayments] = useState([]);
 
   const loadHistory = async () => {
     try {
@@ -40,8 +43,19 @@ function AttendanceHistory() {
     }
   };
 
+
+  const loadPayments = async () => {
+  try {
+    const res = await getPayments();
+    setPayments(res.data.data);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
   useEffect(() => {
     loadHistory();
+    loadPayments();
   }, []);
 
   const viewDetails = async (date) => {
@@ -244,11 +258,45 @@ function AttendanceHistory() {
                       Present ({presentWorkers.length})
                     </h3>
                     <div className="space-y-2">
-                      {presentWorkers.map((item) => (
-                        <div key={item._id} className="rounded-xl border border-slate-100 bg-white p-3 text-sm font-medium text-slate-700 shadow-2xs">
-                          {item.worker?.name}
-                        </div>
-                      ))}
+                     <div className="space-y-2">
+  {presentWorkers.map((item) => {
+
+    const payment = payments.find(
+      (p) =>
+        p.worker?._id === item.worker?._id &&
+        new Date(p.createdAt).toDateString() ===
+          new Date(item.date).toDateString()
+    );
+
+    return (
+      <div
+        key={item._id}
+        className="rounded-xl border border-slate-100 bg-white p-3 shadow-2xs"
+      >
+        <p className="font-medium text-slate-700">
+          {item.worker?.name}
+        </p>
+
+        {payment ? (
+          <div className="mt-2 text-sm">
+            <p className="font-semibold text-green-600">
+              Rs. {payment.amount}
+            </p>
+
+            <p className="text-slate-500">
+              {payment.paymentType}
+            </p>
+          </div>
+        ) : (
+          <p className="mt-2 text-xs text-slate-400">
+            No Payment
+          </p>
+        )}
+      </div>
+    );
+
+  })}
+</div>
                     </div>
                   </div>
 
