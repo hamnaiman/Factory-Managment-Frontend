@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate, NavLink } from "react-router-dom";
-// 1. Apni API Service se logoutUser import karein
-import { logoutUser } from "../services/authService"; // <-- Apna correct relative path dein
+import { logoutUser } from "../services/authService";
 
 import {
   LayoutDashboard,
@@ -13,7 +12,9 @@ import {
   Boxes,
   Factory,
   ShoppingCart,
+  ShoppingBag, // <-- Purchase ke liye Icon
   FileBarChart2,
+  Truck,
   LogOut,
   X,
   Menu
@@ -27,8 +28,13 @@ const menus = [
   { name: "Payments", icon: Wallet, path: "/payments" },
   { name: "Products", icon: Package, path: "/products" },
   { name: "Clients", icon: Users, path: "/clients" },
+  { name: "Vendors", icon: Truck, path: "/vendors" },
+  {
+  name: "Profit & Expenses",icon : FileBarChart2, path: "/expenses",
+},
+  { name: "Purchase", icon: ShoppingBag, path: "/purchase" }, // <-- Added Purchase Navigation
   { name: "Stock", icon: Boxes, path: "/stock" },
-  { name: "Production", icon: Factory, path: "/production" },
+  // { name: "Production", icon: Factory, path: "/production" },
   { name: "Sales", icon: ShoppingCart, path: "/sales" },
   { name: "Reports", icon: FileBarChart2, path: "/reports" },
 ];
@@ -42,15 +48,10 @@ function Sidebar({ isOpen, setIsOpen }) {
     }
   };
 
-  // 2. Updated Clean Logout Handler
   const handleLogout = async () => {
     try {
-      await logoutUser(); // Call your centralized API service
-
-      // Token / Auth state clear karein
+      await logoutUser();
       localStorage.clear();
-
-      // Login route par bhej dein
       navigate("/");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -99,7 +100,7 @@ function Sidebar({ isOpen, setIsOpen }) {
                   onClick={handleNavLinkClick}
                   className={({ isActive }) =>
                     `flex items-center rounded-xl px-4 py-3 font-medium transition-all duration-200 group relative
-                    ${isActive ? "bg-[#1E3A8A] text-white shadow-xs" : "text-slate-600 hover:bg-slate-50"}`
+                    ${isActive ? "bg-[#1E3A8A] text-[#ffffff] shadow-xs" : "text-slate-600 hover:bg-slate-50"}`
                   }
                 >
                   <Icon size={20} className="shrink-0" />
@@ -119,7 +120,7 @@ function Sidebar({ isOpen, setIsOpen }) {
           </div>
         </nav>
 
-        {/* Logout Button with onClick */}
+        {/* Logout Button */}
         <div className="border-t border-slate-200 p-3 shrink-0 overflow-hidden">
           <button 
             onClick={handleLogout}

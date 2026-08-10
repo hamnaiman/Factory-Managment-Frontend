@@ -5,62 +5,288 @@ import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 import AttendanceTable from "../components/AttendanceTable";
 import AttendanceSummary from "../components/AttendanceSummary";
+import PaymentModal from "../components/PaymentModal";
+
 import { addPayment } from "../services/paymentService";
 
-import {
-  Search,
-} from "lucide-react";
+import { Search } from "lucide-react";
 
 import { getLabours } from "../services/labourService";
-import { markAttendance, getTodayAttendance } from "../services/attendanceService";
+
+import {
+  markAttendance,
+  getAttendanceByDate,
+} from "../services/attendanceService";
+
+// =====================================================
+// DATE HELPER
+// =====================================================
+
+const getTodayDate = () => {
+  const now = new Date();
+
+  const year = now.getFullYear();
+
+  const month = String(
+    now.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+    now.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+// =====================================================
+// COMPONENT
+// =====================================================
 
 function Attendance() {
-  // Desktop standard fixed layout state - starts open by default
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // ===================================================
+  // SIDEBAR
+  // ===================================================
 
-  const [workers, setWorkers] = useState([]);
-  const [attendance, setAttendance] = useState([]);
-  const [search, setSearch] = useState("");
-  const [attendanceSaved, setAttendanceSaved] = useState(false);
-  const [payments, setPayments] = useState({});
+  const [isSidebarOpen, setIsSidebarOpen] =
+    useState(true);
+
+  // ===================================================
+  // WORKERS
+  // ===================================================
+
+  const [workers, setWorkers] =
+    useState([]);
+
+  // ===================================================
+  // ATTENDANCE
+  // ===================================================
+
+  const [attendance, setAttendance] =
+    useState([]);
+
+  // ===================================================
+  // SEARCH
+  // ===================================================
+
+  const [search, setSearch] =
+    useState("");
+
+  // ===================================================
+  // SELECTED DATE
+  // ===================================================
+
+  const [selectedDate, setSelectedDate] =
+    useState(getTodayDate());
+
+  // ===================================================
+  // ATTENDANCE SAVED
+  // ===================================================
+
+  const [attendanceSaved, setAttendanceSaved] =
+    useState(false);
+
+  // ===================================================
+  // PAYMENTS
+  // ===================================================
+
+  const [payments, setPayments] =
+    useState({});
+
+  // ===================================================
+  // PAYMENT MODAL
+  // ===================================================
+
+  const [openPaymentModal, setOpenPaymentModal] =
+    useState(false);
+
+  const [selectedWorker, setSelectedWorker] =
+    useState(null);
+
+  // ===================================================
+  // TODAY
+  // ===================================================
+
+  const today = getTodayDate();
+
+  const isToday =
+    selectedDate === today;
+
+  const isFutureDate =
+    selectedDate > today;
+
+  // ===================================================
+  // LOAD WORKERS
+  // ===================================================
 
   const loadWorkers = async () => {
     try {
-      const response = await getLabours();
-      setWorkers(response.data.data);
+      const response =
+        await getLabours();
+
+      setWorkers(
+        response?.data?.data || []
+      );
     } catch (error) {
-      toast.error("Failed to load workers");
+      console.error(
+        "Worker load error:",
+        error
+      );
+
+      toast.error(
+        "Failed to load workers"
+      );
     }
   };
 
-  const checkTodayAttendance = async () => {
+  // ===================================================
+  // LOAD ATTENDANCE BY DATE
+  // ===================================================
+
+  const loadAttendanceByDate = async (
+    date
+  ) => {
     try {
-      const response = await getTodayAttendance();
-
-      if (response.data.data.length > 0) {
-        const formattedAttendance = response.data.data.map((item) => ({
-          worker: item.worker._id,
-          status: item.status,
-        }));
-
-        setAttendance(formattedAttendance);
-        setAttendanceSaved(true);
-      } else {
+      if (!date) {
+        setAttendance([]);
         setAttendanceSaved(false);
+        return;
       }
+
+      const response =
+        await getAttendanceByDate(date);
+
+      const records =
+        response?.data?.data || [];
+
+      const formattedAttendance =
+        records
+          .map((item) => {
+            const workerId =
+              item.worker?._id ||
+              item.worker;
+
+            if (!workerId) {
+              return null;
+            }
+
+            return {
+              worker: workerId,
+              status: item.status,
+            };
+          })
+          .filter(Boolean);
+
+      setAttendance(
+        formattedAttendance
+      );
+
+      /*
+       * If all workers have attendance
+       * for this selected date,
+       * disable Save button.
+       *
+       * If only some workers are saved,
+       * remaining workers can still be added.
+       */
+
+      setAttendanceSaved(
+        workers.length > 0 &&
+        formattedAttendance.length >=
+          workers.length
+      );
     } catch (error) {
-      console.log(error);
+      console.error(
+        "Attendance load error:",
+        error
+      );
+
+      setAttendance([]);
+
+      setAttendanceSaved(false);
     }
   };
+
+  // ===================================================
+  // INITIAL LOAD
+  // ===================================================
 
   useEffect(() => {
     loadWorkers();
-    checkTodayAttendance();
   }, []);
 
-  const handleStatusChange = (workerId, status) => {
+  // ===================================================
+  // LOAD ATTENDANCE WHEN DATE CHANGES
+  // ===================================================
+
+  useEffect(() => {
+    if (!selectedDate) {
+      return;
+    }
+
+    loadAttendanceByDate(
+      selectedDate
+    );
+  }, [selectedDate]);
+
+  // ===================================================
+  // LOAD AGAIN AFTER WORKERS LOAD
+  // ===================================================
+
+  useEffect(() => {
+    if (workers.length > 0) {
+      loadAttendanceByDate(
+        selectedDate
+      );
+    }
+  }, [workers.length]);
+
+  // ===================================================
+  // STATUS CHANGE
+  // ===================================================
+
+  const handleStatusChange = (
+    workerId,
+    status
+  ) => {
+    // Future date protection
+    if (isFutureDate) {
+      toast.error(
+        "Future date ki attendance add nahi kar sakte."
+      );
+
+      return;
+    }
+
+    /*
+     * Check if this worker already has
+     * attendance saved for selected date.
+     */
+
+    const alreadySaved =
+      attendance.some(
+        (item) =>
+          item.worker === workerId
+      );
+
+    if (alreadySaved) {
+      toast.error(
+        "Attendance is already saved for this worker on this date."
+      );
+
+      return;
+    }
+
     setAttendance((prev) => {
-      const filtered = prev.filter((item) => item.worker !== workerId);
+      const filtered =
+        prev.filter(
+          (item) =>
+            item.worker !== workerId
+        );
+
+      if (!status) {
+        return filtered;
+      }
+
       return [
         ...filtered,
         {
@@ -71,123 +297,460 @@ function Attendance() {
     });
   };
 
- const handleSaveAttendance = async () => {
-  try {
-    // Attendance Save
-    await markAttendance(attendance);
+  // ===================================================
+  // ADD PAYMENT
+  // ===================================================
 
-    // Payments Save (Optional)
-    const paymentList = Object.values(payments);
+  const handleAddPayment = (
+    worker
+  ) => {
+    setSelectedWorker(worker);
+    setOpenPaymentModal(true);
+  };
 
-    for (const payment of paymentList) {
-      if (
-        payment.payToday &&
-        payment.amount &&
-        Number(payment.amount) > 0
-      ) {
-        await addPayment({
-          worker: payment.worker,
-          amount: Number(payment.amount),
-          paymentType: payment.paymentType,
-          paymentMethod: "Cash",
-          remark: "Paid while marking attendance",
-        });
+  // ===================================================
+  // SAVE ATTENDANCE
+  // ===================================================
+
+  const handleSaveAttendance =
+    async () => {
+      try {
+        // ---------------------------------------------
+        // Date validation
+        // ---------------------------------------------
+
+        if (!selectedDate) {
+          toast.error(
+            "Please select attendance date."
+          );
+
+          return;
+        }
+
+        // ---------------------------------------------
+        // Future date protection
+        // ---------------------------------------------
+
+        if (selectedDate > today) {
+          toast.error(
+            "Future date ki attendance add nahi kar sakte."
+          );
+
+          return;
+        }
+
+        // ---------------------------------------------
+        // No attendance selected
+        // ---------------------------------------------
+
+        if (attendance.length === 0) {
+          toast.error(
+            "Please mark attendance first."
+          );
+
+          return;
+        }
+
+        // ---------------------------------------------
+        // Get existing attendance for EXACT date
+        // ---------------------------------------------
+
+        const response =
+          await getAttendanceByDate(
+            selectedDate
+          );
+
+        const existingRecords =
+          response?.data?.data || [];
+
+        // ---------------------------------------------
+        // Existing worker IDs
+        // ---------------------------------------------
+
+        const alreadyMarked =
+          new Set(
+            existingRecords
+              .map(
+                (item) =>
+                  item.worker?._id ||
+                  item.worker
+              )
+              .filter(Boolean)
+          );
+
+        // ---------------------------------------------
+        // Only new attendance
+        // ---------------------------------------------
+
+        const newAttendance =
+          attendance
+            .filter(
+              (item) =>
+                !alreadyMarked.has(
+                  item.worker
+                )
+            )
+            .map((item) => ({
+              worker: item.worker,
+              status: item.status,
+
+              // VERY IMPORTANT:
+              // selected date is sent
+              date: selectedDate,
+            }));
+
+        // ---------------------------------------------
+        // Nothing new to save
+        // ---------------------------------------------
+
+        if (
+          newAttendance.length === 0
+        ) {
+          toast.error(
+            "Attendance is already saved for the selected workers and date."
+          );
+
+          await loadAttendanceByDate(
+            selectedDate
+          );
+
+          return;
+        }
+
+        // ---------------------------------------------
+        // SAVE
+        // ---------------------------------------------
+
+        await markAttendance(
+          newAttendance
+        );
+
+        toast.success(
+          "Attendance saved successfully."
+        );
+
+        // ---------------------------------------------
+        // Reload selected date
+        // ---------------------------------------------
+
+        await loadAttendanceByDate(
+          selectedDate
+        );
+      } catch (error) {
+        console.error(
+          "Save attendance error:",
+          error
+        );
+
+        toast.error(
+          error?.response?.data?.message ||
+            "Failed to save attendance."
+        );
       }
+    };
+
+  // ===================================================
+  // DATE CHANGE
+  // ===================================================
+
+  const handleDateChange = (
+    e
+  ) => {
+    const date =
+      e.target.value;
+
+    // Future date protection
+    if (date > today) {
+      toast.error(
+        "Future date ki attendance add nahi kar sakte."
+      );
+
+      return;
     }
 
-    toast.success("Attendance saved successfully");
+    setSelectedDate(date);
+  };
 
-    await checkTodayAttendance();
-  } catch (error) {
-    console.log(error);
-    toast.error("Failed to save attendance");
-  }
-};
+  // ===================================================
+  // RENDER
+  // ===================================================
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-100 flex">
-      {/* Sidebar Component */}
+    <div className="min-h-screen bg-slate-100">
+
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
+
       <Sidebar
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
       />
 
-      {/* Main Content Area - Fixed dynamic margin to match the new dynamic layout */}
-      <div 
-        className={`flex-1 min-w-0 transition-all duration-300 ease-in-out
-        ${isSidebarOpen ? "ml-0 lg:ml-72" : "ml-0 lg:ml-20"}`}
+      {/* =================================================
+          MAIN CONTENT
+      ================================================= */}
+
+      <div
+        className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen
+            ? "ml-0 lg:ml-72"
+            : "ml-0 lg:ml-20"
+        }`}
       >
-        {/* Fixed Navbar with current layout synchronization state */}
+
+        {/* =================================================
+            NAVBAR
+        ================================================= */}
+
         <Navbar
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
+          isSidebarOpen={
+            isSidebarOpen
+          }
+          setIsSidebarOpen={
+            setIsSidebarOpen
+          }
         />
 
-        {/* Page Content area shifted via mt-24 away from navbar */}
-        <main className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto mt-24">
-          
-          {/* Header */}
+        {/* =================================================
+            PAGE
+        ================================================= */}
+
+        <main className="mx-auto mt-24 max-w-[1600px] space-y-6 p-4 md:p-6 lg:p-8">
+
+          {/* =================================================
+              HEADER
+          ================================================= */}
+
           <div>
             <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
               Attendance
             </h1>
+
             <p className="mt-1 text-sm text-slate-500">
-              Mark today's workers attendance.
+              {isToday
+                ? "Mark today's workers attendance."
+                : "Add or view attendance for the selected date."}
             </p>
           </div>
 
-          {/* Toolbar */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              {/* Search */}
-              <div className="relative w-full md:max-w-md lg:max-w-sm">
-                <Search
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                  type="text"
-                  placeholder="Search Worker..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-slate-300 pl-11 pr-4 text-sm outline-hidden transition focus:border-[#1E3A8A]"
-                />
+          {/* =================================================
+              TOOLBAR
+          ================================================= */}
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+
+            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+
+              {/* SEARCH */}
+
+              <div className="w-full md:max-w-md">
+
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Search Worker
+                </label>
+
+                <div className="relative">
+
+                  <Search
+                    size={18}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+
+                  <input
+                    type="text"
+                    placeholder="Search Worker..."
+                    value={search}
+                    onChange={(e) =>
+                      setSearch(
+                        e.target.value
+                      )
+                    }
+                    className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm outline-none transition focus:border-[#1E3A8A]"
+                  />
+
+                </div>
               </div>
+
+              {/* DATE */}
+
+              <div className="w-full md:w-auto">
+
+                <label className="mb-2 block text-sm font-medium text-slate-700">
+                  Attendance Date
+                </label>
+
+                <input
+                  type="date"
+                  value={selectedDate}
+                  max={today}
+                  onChange={
+                    handleDateChange
+                  }
+                  className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none focus:border-[#1E3A8A] md:w-72"
+                />
+
+              </div>
+
             </div>
           </div>
 
-          {/* Attendance Table */}
-          <div className="w-full overflow-x-auto bg-white rounded-3xl border border-slate-200 shadow-xs">
-            <AttendanceTable
-                workers={workers}
-  attendance={attendance}
-  search={search}
-  onStatusChange={handleStatusChange}
-  payments={payments}
-  setPayments={setPayments}
-            />
-          </div>
+          {/* =================================================
+              FUTURE DATE MESSAGE
+          ================================================= */}
 
-          {/* Save Button */}
-          <div className="flex justify-stretch sm:justify-end">
-            <button
-              onClick={handleSaveAttendance}
-              className="h-12 w-full rounded-2xl bg-[#1E3A8A] px-8 font-semibold text-white transition hover:bg-[#17307A] sm:w-auto cursor-pointer"
-            >
-              Save Attendance
-            </button>
-          </div>
-
-          {/* Summary */}
-          {attendanceSaved && (
-            <div className="mt-8">
-              <AttendanceSummary
-                workers={workers}
-                attendance={attendance}
-                 payments={payments}
-              />
+          {isFutureDate && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm font-medium text-slate-600">
+              Future date ki attendance add nahi kar sakte.
             </div>
           )}
+
+          {/* =================================================
+              ATTENDANCE TABLE
+          ================================================= */}
+
+          <div className="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+
+            <AttendanceTable
+              workers={workers}
+              attendance={
+                attendance
+              }
+              search={search}
+              onStatusChange={
+                handleStatusChange
+              }
+              onAddPayment={
+                handleAddPayment
+              }
+            />
+
+          </div>
+
+          {/* =================================================
+              SAVE BUTTON
+          ================================================= */}
+
+          <div className="flex justify-stretch sm:justify-end">
+
+            <button
+              type="button"
+              onClick={
+                handleSaveAttendance
+              }
+              disabled={
+                attendanceSaved ||
+                isFutureDate
+              }
+              className={`h-12 w-full rounded-2xl px-8 font-semibold text-white transition sm:w-auto ${
+                attendanceSaved ||
+                isFutureDate
+                  ? "cursor-not-allowed bg-slate-400"
+                  : "cursor-pointer bg-[#1E3A8A] hover:bg-[#17307A]"
+              }`}
+            >
+              {isFutureDate
+                ? "Future Date Not Allowed"
+                : attendanceSaved
+                ? "Attendance Already Saved"
+                : "Save Attendance"}
+            </button>
+
+          </div>
+
+          {/* =================================================
+              TODAY'S SUMMARY ONLY
+          ================================================= */}
+
+          {isToday && (
+            <div className="mt-8">
+
+              <AttendanceSummary
+                workers={workers}
+                attendance={
+                  attendance
+                }
+                payments={
+                  payments
+                }
+              />
+
+            </div>
+          )}
+
+          {/* =================================================
+              PAYMENT MODAL
+          ================================================= */}
+
+          <PaymentModal
+            open={
+              openPaymentModal
+            }
+
+            onClose={() => {
+              setOpenPaymentModal(
+                false
+              );
+
+              setSelectedWorker(
+                null
+              );
+            }}
+
+            onSubmit={async (
+              data
+            ) => {
+              try {
+
+                await addPayment({
+                  ...data,
+                  worker:
+                    selectedWorker?._id,
+                });
+
+                toast.success(
+                  "Payment added successfully"
+                );
+
+                setOpenPaymentModal(
+                  false
+                );
+
+                setSelectedWorker(
+                  null
+                );
+
+              } catch (error) {
+
+                console.error(
+                  error
+                );
+
+                toast.error(
+                  error?.response
+                    ?.data
+                    ?.message ||
+                    "Payment failed"
+                );
+              }
+            }}
+
+            initialData={
+              selectedWorker
+                ? {
+                    worker:
+                      selectedWorker,
+                    amount: "",
+                    paymentType:
+                      "Salary",
+                    paymentMethod:
+                      "Cash",
+                    remark: "",
+                  }
+                : null
+            }
+          />
+
         </main>
       </div>
     </div>

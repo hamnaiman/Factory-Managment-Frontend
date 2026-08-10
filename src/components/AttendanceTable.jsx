@@ -1,10 +1,9 @@
 function AttendanceTable({
-   workers,
+  workers,
   attendance,
   search,
   onStatusChange,
-  payments,
-  setPayments,
+  onAddPayment,
 }) {
   const filteredWorkers = workers.filter((worker) =>
     worker.name.toLowerCase().includes(search.toLowerCase())
@@ -12,211 +11,203 @@ function AttendanceTable({
 
   if (filteredWorkers.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <p className="text-slate-500">No workers found.</p>
+      <div className="p-10 text-center text-slate-500">
+        No workers found.
       </div>
     );
   }
 
   const getStatus = (workerId) =>
-  attendance.find((item) => item.worker === workerId)?.status || "";
-  
-  const handlePaymentChange = (workerId, field, value) => {
-  setPayments((prev) => ({
-    ...prev,
-    [workerId]: {
-      ...prev[workerId],
-      worker: workerId,
-      [field]: value,
-    },
-  }));
-};
+    attendance.find(
+      (item) => item.worker === workerId
+    )?.status || "";
 
   return (
     <>
-      {/* ================= Desktop / Tablet ================= */}
+      {/* ================= Desktop ================= */}
 
       <div className="hidden lg:block">
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="min-w-[900px]">
-            {/* Header */}
+        <div className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-            <div className="grid grid-cols-12 border-b border-slate-200 bg-slate-50 px-6 py-4 font-semibold text-slate-700">
-              <div className="col-span-4">Worker</div>
+          {/* Header */}
 
-              <div className="col-span-3">Department</div>
+          <div className="grid grid-cols-12 items-center border-b border-slate-200 bg-slate-50 px-5 py-4 font-semibold text-slate-700">
 
-              <div className="col-span-5 text-center">
-                Attendance
-              </div>
-              <div className="col-span-3 text-center">
-  Payment
-</div>
+            <div className="col-span-3">
+              Worker
             </div>
 
-            {/* Rows */}
+            <div className="col-span-2">
+              Department
+            </div>
 
-            {filteredWorkers.map((worker) => (
-              <div
-                key={worker._id}
-                className="grid grid-cols-12 items-center border-b border-slate-100 px-6 py-5 hover:bg-slate-50 transition"
-              >
-                <div className="col-span-4">
-                  <h3 className="font-semibold text-slate-800">
-                    {worker.name}
-                  </h3>
-                </div>
+            <div className="col-span-4 text-center">
+              Attendance
+            </div>
 
-                <div className="col-span-3 text-slate-500">
-                  {worker.department}
-                </div>
+            <div className="col-span-3 text-center">
+              Payment
+            </div>
 
-                <div className="col-span-5">
-                  <div className="flex justify-center gap-8">
-                    <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
-                      <input
-  type="checkbox"
-  checked={getStatus(worker._id) === "present"}
-  onChange={() =>
-    onStatusChange(
-      worker._id,
-      getStatus(worker._id) === "present"
-        ? ""
-        : "present"
-    )
-  }
-/>
-                      <span className="font-medium text-green-600">
-                        Present
-                      </span>
-                    </label>
-
-                    <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
-                    <input
-  type="checkbox"
-  checked={getStatus(worker._id) === "absent"}
-  onChange={() =>
-    onStatusChange(
-      worker._id,
-      getStatus(worker._id) === "absent"
-        ? ""
-        : "absent"
-    )
-  }
-/>
-
-                      <span className="font-medium text-red-600">
-                        Absent
-                      </span>
-                    </label>
-
-                    <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
-<input
-  type="checkbox"
-  checked={getStatus(worker._id) === "leave"}
-  onChange={() =>
-    onStatusChange(
-      worker._id,
-      getStatus(worker._id) === "leave"
-        ? ""
-        : "leave"
-    )
-  }
-/>
-
-                      <span className="font-medium text-orange-500">
-                        Leave
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="col-span-3">
-
-  <label className="flex items-center gap-2">
-    <input
-      type="checkbox"
-      checked={payments[worker._id]?.payToday || false}
-      onChange={(e) =>
-        handlePaymentChange(
-          worker._id,
-          "payToday",
-          e.target.checked
-        )
-      }
-    />
-
-    <span>Pay Today</span>
-  </label>
-
-  {payments[worker._id]?.payToday && (
-    <div className="mt-2 space-y-2">
-
-      <input
-        type="number"
-        placeholder="Amount"
-        value={payments[worker._id]?.amount || ""}
-        onChange={(e) =>
-          handlePaymentChange(
-            worker._id,
-            "amount",
-            e.target.value
-          )
-        }
-        className="w-full rounded-lg border p-2"
-      />
-
-      <select
-        value={
-          payments[worker._id]?.paymentType ||
-          "Salary"
-        }
-        onChange={(e) =>
-          handlePaymentChange(
-            worker._id,
-            "paymentType",
-            e.target.value
-          )
-        }
-        className="w-full rounded-lg border p-2"
-      >
-        <option value="Salary">Salary</option>
-        <option value="Advance">Advance</option>
-      </select>
-
-    </div>
-  )}
-
-</div>
-
-              </div>
-            ))}
           </div>
+
+          {/* Rows */}
+
+          {filteredWorkers.map((worker) => (
+            <div
+              key={worker._id}
+              className="grid grid-cols-12 items-center border-b border-slate-100 px-5 py-5 transition hover:bg-slate-50"
+            >
+
+              {/* Worker */}
+
+              <div className="col-span-3 min-w-0">
+                <h3 className="truncate font-semibold text-slate-800">
+                  {worker.name}
+                </h3>
+              </div>
+
+              {/* Department */}
+
+              <div className="col-span-2 min-w-0 text-slate-500">
+                <span className="truncate block">
+                  {worker.department || "-"}
+                </span>
+              </div>
+
+              {/* Attendance */}
+
+              <div className="col-span-4">
+                <div className="flex items-center justify-center gap-5">
+
+                  {/* Present */}
+
+                  <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={
+                        getStatus(worker._id) === "present"
+                      }
+                      onChange={() =>
+                        onStatusChange(
+                          worker._id,
+                          getStatus(worker._id) === "present"
+                            ? ""
+                            : "present"
+                        )
+                      }
+                      className="h-4 w-4"
+                    />
+
+                    <span className="text-sm font-medium text-green-600">
+                      Present
+                    </span>
+                  </label>
+
+                  {/* Absent */}
+
+                  <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={
+                        getStatus(worker._id) === "absent"
+                      }
+                      onChange={() =>
+                        onStatusChange(
+                          worker._id,
+                          getStatus(worker._id) === "absent"
+                            ? ""
+                            : "absent"
+                        )
+                      }
+                      className="h-4 w-4"
+                    />
+
+                    <span className="text-sm font-medium text-red-600">
+                      Absent
+                    </span>
+                  </label>
+
+                  {/* Leave */}
+
+                  <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={
+                        getStatus(worker._id) === "leave"
+                      }
+                      onChange={() =>
+                        onStatusChange(
+                          worker._id,
+                          getStatus(worker._id) === "leave"
+                            ? ""
+                            : "leave"
+                        )
+                      }
+                      className="h-4 w-4"
+                    />
+
+                    <span className="text-sm font-medium text-orange-500">
+                      Leave
+                    </span>
+                  </label>
+
+                </div>
+              </div>
+
+              {/* Payment */}
+
+              <div className="col-span-3 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => onAddPayment(worker)}
+                  className="rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+                >
+                  + Add Payment
+                </button>
+              </div>
+
+            </div>
+          ))}
+
         </div>
       </div>
 
       {/* ================= Mobile + Tablet ================= */}
 
       <div className="grid gap-4 lg:hidden">
+
         {filteredWorkers.map((worker) => (
           <div
             key={worker._id}
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
           >
+
+            {/* Worker */}
+
             <div>
               <h3 className="text-lg font-bold text-slate-800">
                 {worker.name}
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
-                {worker.department}
+                {worker.department || "-"}
               </p>
             </div>
 
+            {/* Attendance */}
+
             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+
               <button
+                type="button"
                 onClick={() =>
-                  onStatusChange(worker._id, "present")
+                  onStatusChange(
+                    worker._id,
+                    getStatus(worker._id) === "present"
+                      ? ""
+                      : "present"
+                  )
                 }
                 className={`h-11 rounded-xl font-semibold transition ${
                   getStatus(worker._id) === "present"
@@ -228,8 +219,14 @@ function AttendanceTable({
               </button>
 
               <button
+                type="button"
                 onClick={() =>
-                  onStatusChange(worker._id, "absent")
+                  onStatusChange(
+                    worker._id,
+                    getStatus(worker._id) === "absent"
+                      ? ""
+                      : "absent"
+                  )
                 }
                 className={`h-11 rounded-xl font-semibold transition ${
                   getStatus(worker._id) === "absent"
@@ -241,8 +238,14 @@ function AttendanceTable({
               </button>
 
               <button
+                type="button"
                 onClick={() =>
-                  onStatusChange(worker._id, "leave")
+                  onStatusChange(
+                    worker._id,
+                    getStatus(worker._id) === "leave"
+                      ? ""
+                      : "leave"
+                  )
                 }
                 className={`h-11 rounded-xl font-semibold transition ${
                   getStatus(worker._id) === "leave"
@@ -252,9 +255,24 @@ function AttendanceTable({
               >
                 Leave
               </button>
+
             </div>
+
+            {/* Payment */}
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => onAddPayment(worker)}
+                className="h-11 w-full rounded-xl bg-blue-100 font-semibold text-blue-700 transition hover:bg-blue-200"
+              >
+                + Add Payment
+              </button>
+            </div>
+
           </div>
         ))}
+
       </div>
     </>
   );

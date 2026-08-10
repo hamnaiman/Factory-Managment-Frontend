@@ -1,392 +1,522 @@
-// import {
-//   CalendarCheck2,
-//   ArrowRight,
-//   Users,
-//   CheckCircle2,
-//   XCircle,
-//   Clock3,
-// } from "lucide-react";
-// import { useNavigate } from "react-router-dom";
-
-// function AttendanceHero({ dashboard }) {
-//   const navigate = useNavigate();
-
-//   const hour = new Date().getHours();
-
-//   const greeting =
-//     hour < 12
-//       ? "Good Morning"
-//       : hour < 17
-//       ? "Good Afternoon"
-//       : "Good Evening";
-
-//   const today = new Date().toLocaleDateString("en-GB", {
-//     weekday: "long",
-//     day: "numeric",
-//     month: "long",
-//     year: "numeric",
-//   });
-
-//   const attendanceCompleted =
-//     (dashboard?.presentToday || 0) +
-//       (dashboard?.absentToday || 0) +
-//       (dashboard?.leaveToday || 0) >
-//     0;
-
-//   return (
-//     <section className="mb-8">
-
-//       <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-white via-slate-50 to-blue-50 shadow-sm">
-
-//         <div className="absolute -top-28 -right-24 h-72 w-72 rounded-full bg-blue-100/40 blur-3xl" />
-
-//         <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-[#1E3A8A] via-blue-500 to-cyan-400" />
-
-//         <div className="relative grid gap-8 lg:grid-cols-[1.7fr_1fr] p-8">
-
-//           {/* LEFT */}
-
-//           <div>
-
-//             <span className="inline-flex rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-sm font-medium text-[#1E3A8A]">
-//               {greeting}
-//             </span>
-
-//             <h1 className="mt-6 text-5xl font-bold tracking-tight text-slate-900">
-//               Welcome Back, Admin
-//             </h1>
-
-//             <p className="mt-3 text-slate-500 text-lg">
-//               {today}
-//             </p>
-
-//             <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-//               Monitor workforce attendance, manage payroll,
-//               oversee inventory and keep production operations
-//               running efficiently from a single dashboard.
-//             </p>
-
-//             <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
-
-//               <div className="rounded-2xl border bg-white p-5">
-//                 <Users className="text-[#1E3A8A]" size={22} />
-//                 <h3 className="mt-4 text-3xl font-bold">
-//                   {dashboard?.totalWorkers || 0}
-//                 </h3>
-//                 <p className="mt-1 text-sm text-slate-500">
-//                   Workers
-//                 </p>
-//               </div>
-
-//               <div className="rounded-2xl border bg-white p-5">
-//                 <CheckCircle2 className="text-green-600" size={22} />
-//                 <h3 className="mt-4 text-3xl font-bold">
-//                   {dashboard?.presentToday || 0}
-//                 </h3>
-//                 <p className="mt-1 text-sm text-slate-500">
-//                   Present
-//                 </p>
-//               </div>
-
-//               <div className="rounded-2xl border bg-white p-5">
-//                 <XCircle className="text-red-500" size={22} />
-//                 <h3 className="mt-4 text-3xl font-bold">
-//                   {dashboard?.absentToday || 0}
-//                 </h3>
-//                 <p className="mt-1 text-sm text-slate-500">
-//                   Absent
-//                 </p>
-//               </div>
-
-//               <div className="rounded-2xl border bg-white p-5">
-//                 <Clock3 className="text-amber-500" size={22} />
-//                 <h3 className="mt-4 text-3xl font-bold">
-//                   {dashboard?.leaveToday || 0}
-//                 </h3>
-//                 <p className="mt-1 text-sm text-slate-500">
-//                   Leave
-//                 </p>
-//               </div>
-
-//             </div>
-
-//           </div>
-
-//           {/* RIGHT */}
-
-//           <div className="rounded-3xl border border-slate-200 bg-white/80 backdrop-blur-sm p-7 shadow-sm">
-
-//             <div className="flex items-center justify-between">
-
-//               <div className="flex items-center gap-4">
-
-//                 <div
-//                   className={`flex h-16 w-16 items-center justify-center rounded-2xl ${
-//                     attendanceCompleted
-//                       ? "bg-green-100"
-//                       : "bg-amber-100"
-//                   }`}
-//                 >
-//                   <CalendarCheck2
-//                     size={30}
-//                     className={
-//                       attendanceCompleted
-//                         ? "text-green-600"
-//                         : "text-amber-600"
-//                     }
-//                   />
-//                 </div>
-
-//                 <div>
-
-//                   <p className="text-sm text-slate-500">
-//                     Today's Attendance
-//                   </p>
-
-//                   <h2 className="mt-1 text-3xl font-bold text-slate-900">
-//                     {attendanceCompleted
-//                       ? "Completed"
-//                       : "Pending"}
-//                   </h2>
-
-//                 </div>
-
-//               </div>
-
-//             </div>
-
-//             <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-
-//               <p className="text-sm leading-7 text-slate-600">
-
-//                 {attendanceCompleted
-//                   ? "Attendance has been recorded for today. You can continue managing payroll, inventory and production."
-//                   : "Attendance has not been recorded yet. Complete today's attendance before proceeding with payroll activities."}
-
-//               </p>
-
-//             </div>
-
-//             <button
-//               onClick={() => navigate("/attendance")}
-//               className={`mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-2xl text-base font-semibold text-white transition ${
-//                 attendanceCompleted
-//                   ? "bg-green-600 hover:bg-green-700"
-//                   : "bg-[#1E3A8A] hover:bg-[#17307A]"
-//               }`}
-//             >
-//               {attendanceCompleted
-//                 ? "View Attendance"
-//                 : "Mark Today's Attendance"}
-
-//               <ArrowRight size={18} />
-
-//             </button>
-
-//           </div>
-
-//         </div>
-
-//       </div>
-
-//     </section>
-//   );
-// }
-
-// export default AttendanceHero;
-
+import { useState } from "react";
 
 import {
   CalendarCheck2,
   ArrowRight,
+  TrendingUp,
+  CircleDollarSign,
+  ReceiptText,
+  WalletCards,
   Users,
   CheckCircle2,
-  XCircle,
-  Clock3,
+  Clock,
+  Info,
 } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 
 function AttendanceHero({ dashboard }) {
   const navigate = useNavigate();
 
-  const today = new Date().toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const [hoveredCard, setHoveredCard] =
+    useState(null);
+
+  if (!dashboard) {
+    return null;
+  }
+
+  // ============================================================
+  // DATE
+  // ============================================================
+
+  const today =
+    new Date().toLocaleDateString(
+      "en-GB",
+      {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }
+    );
+
+  // ============================================================
+  // FINANCIAL DATA
+  // ============================================================
+
+  const revenue = Number(
+    dashboard.totalRevenue || 0
+  );
+
+  const grossProfit = Number(
+    dashboard.grossProfit || 0
+  );
+
+  const expenses = Number(
+    dashboard.totalExpenses || 0
+  );
+
+  const netProfit = Number(
+    dashboard.netProfit || 0
+  );
+
+  // ============================================================
+  // ATTENDANCE DATA
+  // ============================================================
+
+  const totalWorkers = Number(
+    dashboard.totalWorkers || 0
+  );
+
+  const recordedWorkers = Number(
+    dashboard.attendanceRecordedToday ??
+      dashboard.recordedWorkersToday ??
+      dashboard.recordedToday ??
+      0
+  );
+
+  const presentToday = Number(
+    dashboard.presentToday || 0
+  );
+
+  const absentToday = Number(
+    dashboard.absentToday || 0
+  );
+
+  const leaveToday = Number(
+    dashboard.leaveToday || 0
+  );
+
+  // IMPORTANT:
+  // Never allow recorded workers to exceed
+  // total active workers.
+
+  const actualRecordedWorkers =
+    Math.min(
+      Math.max(
+        recordedWorkers,
+        0
+      ),
+      totalWorkers
+    );
 
   const attendanceCompleted =
-    (dashboard?.presentToday || 0) +
-      (dashboard?.absentToday || 0) +
-      (dashboard?.leaveToday || 0) >
-    0;
+    totalWorkers > 0 &&
+    actualRecordedWorkers >=
+      totalWorkers;
 
-  const stats = [
+  const pendingWorkers =
+    Math.max(
+      totalWorkers -
+        actualRecordedWorkers,
+      0
+    );
+
+  const completionPercentage =
+    totalWorkers > 0
+      ? Math.round(
+          (actualRecordedWorkers /
+            totalWorkers) *
+            100
+        )
+      : 0;
+
+  // ============================================================
+  // CURRENCY
+  // ============================================================
+
+  const formatCurrency = (
+    value
+  ) => {
+    return `Rs. ${Number(
+      value || 0
+    ).toLocaleString(
+      "en-PK",
+      {
+        maximumFractionDigits: 0,
+      }
+    )}`;
+  };
+
+  // ============================================================
+  // FINANCIAL CARDS
+  // ============================================================
+
+  const financialCards = [
     {
-      title: "Workers",
-      value: dashboard?.totalWorkers || 0,
-      icon: Users,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      id: "revenue",
+      title: "Revenue",
+      value: revenue,
+      icon: TrendingUp,
+      iconBg:
+        "bg-blue-50 text-blue-600 border border-blue-100",
+      valueColor:
+        "text-slate-900",
+      description:
+        "Total completed sales",
     },
+
     {
-      title: "Present",
-      value: dashboard?.presentToday || 0,
-      icon: CheckCircle2,
-      color: "text-green-600",
-      bg: "bg-green-50",
+      id: "grossProfit",
+      title: "Gross Profit",
+      value: grossProfit,
+      icon: CircleDollarSign,
+      iconBg:
+        "bg-emerald-50 text-emerald-600 border border-emerald-100",
+      valueColor:
+        grossProfit >= 0
+          ? "text-emerald-600"
+          : "text-rose-600",
+      description:
+        "Revenue after product cost",
     },
+
     {
-      title: "Absent",
-      value: dashboard?.absentToday || 0,
-      icon: XCircle,
-      color: "text-red-600",
-      bg: "bg-red-50",
+      id: "expenses",
+      title: "Expenses",
+      value: expenses,
+      icon: ReceiptText,
+      iconBg:
+        "bg-amber-50 text-amber-600 border border-amber-100",
+      valueColor:
+        "text-amber-600",
+      description:
+        "Current recorded expenses",
     },
+
     {
-      title: "Leave",
-      value: dashboard?.leaveToday || 0,
-      icon: Clock3,
-      color: "text-amber-600",
-      bg: "bg-amber-50",
+      id: "netProfit",
+      title: "Net Profit",
+      value: netProfit,
+      icon: WalletCards,
+      iconBg:
+        netProfit >= 0
+          ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+          : "bg-rose-50 text-rose-600 border border-rose-100",
+      valueColor:
+        netProfit >= 0
+          ? "text-emerald-600"
+          : "text-rose-600",
+      description:
+        "Profit after all expenses",
     },
   ];
 
   return (
-    <section className="mb-8">
-      <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section className="w-full">
+      <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-12">
+        {/* ======================================================
+            LEFT
+        ====================================================== */}
 
-        <div className="grid gap-6 lg:grid-cols-[2fr_360px] p-4">
+        <div className="min-w-0 lg:col-span-7 xl:col-span-8">
+          {/* HEADER */}
 
-          {/* Left Side */}
           <div>
-
-            <p className="text-sm font-medium uppercase tracking-wider text-[#1E3A8A]">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Workforce Management
             </p>
-
-            <h1 className="mt-2 text-3xl font-bold text-slate-900">
-              Dashboard Overview
-            </h1>
 
             <p className="mt-1 text-sm text-slate-500">
               {today}
             </p>
 
-            <p className="mt-4 max-w-2xl text-slate-600">
-              Monitor labour attendance, payroll status and daily workforce
-              activity from a centralized dashboard.
+            <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+              Dashboard Overview
+            </h1>
+
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-500 sm:text-sm">
+              Monitor your factory's financial performance,
+              expenses and daily workforce activity from one
+              centralized dashboard.
             </p>
+          </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {/* FINANCIAL CARDS */}
 
-              {stats.map((item) => {
-                const Icon = item.icon;
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {financialCards.map(
+              (card) => {
+                const Icon =
+                  card.icon;
+
+                const formattedVal =
+                  formatCurrency(
+                    card.value
+                  );
 
                 return (
                   <div
-                    key={item.title}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all duration-300 hover:border-[#1E3A8A] hover:shadow-md"
+                    key={card.id}
+                    onMouseEnter={() =>
+                      setHoveredCard(
+                        card.id
+                      )
+                    }
+                    onMouseLeave={() =>
+                      setHoveredCard(
+                        null
+                      )
+                    }
+                    className="relative min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md"
                   >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                        {card.title}
+                      </span>
 
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${item.bg}`}
-                    >
-                      <Icon
-                        size={20}
-                        className={item.color}
-                      />
+                      <div
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${card.iconBg}`}
+                      >
+                        <Icon
+                          size={16}
+                          strokeWidth={2}
+                        />
+                      </div>
                     </div>
 
-                    <h3 className="mt-4 text-2xl font-bold text-slate-900">
-                      {item.value}
-                    </h3>
+                    <div className="my-3 min-w-0">
+                      <p
+                        className={`truncate text-base font-bold tracking-tight sm:text-lg xl:text-xl ${card.valueColor}`}
+                        title={
+                          formattedVal
+                        }
+                      >
+                        {formattedVal}
+                      </p>
+                    </div>
 
-                    <p className="mt-1 text-sm text-slate-500">
-                      {item.title}
+                    <p className="truncate border-t border-slate-100 pt-2 text-[11px] font-medium text-slate-400">
+                      {card.description}
                     </p>
 
+                    {hoveredCard ===
+                      card.id && (
+                      <div className="absolute left-1/2 top-0 z-30 -translate-x-1/2 -translate-y-full rounded-lg bg-slate-900 px-3 py-2 text-center text-white shadow-xl">
+                        <div className="flex items-center justify-center gap-1.5 text-[10px] font-medium uppercase text-slate-300">
+                          <Info
+                            size={12}
+                            className="text-blue-400"
+                          />
+
+                          <span>
+                            Exact Amount
+                          </span>
+                        </div>
+
+                        <p className="mt-0.5 text-xs font-bold">
+                          {formattedVal}
+                        </p>
+
+                        <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 bg-slate-900" />
+                      </div>
+                    )}
                   </div>
                 );
-              })}
-
-            </div>
-
+              }
+            )}
           </div>
-
-          {/* Right Side */}
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
-
-            <div className="flex items-center gap-4">
-
-              <div
-                className={`flex h-14 w-14 items-center justify-center rounded-xl ${
-                  attendanceCompleted
-                    ? "bg-green-100"
-                    : "bg-orange-100"
-                }`}
-              >
-
-                <CalendarCheck2
-                  size={24}
-                  className={
-                    attendanceCompleted
-                      ? "text-green-600"
-                      : "text-orange-600"
-                  }
-                />
-
-              </div>
-
-              <div>
-
-                <p className="text-sm text-slate-500">
-                  Attendance Status
-                </p>
-
-                <h2 className="text-xl font-bold text-slate-900">
-                  {attendanceCompleted ? "Completed" : "Pending"}
-                </h2>
-
-              </div>
-
-            </div>
-
-            <div
-              className={`mt-5 rounded-xl border p-4 ${
-                attendanceCompleted
-                  ? "border-green-200 bg-green-50"
-                  : "border-orange-200 bg-orange-50"
-              }`}
-            >
-              <p className="text-sm leading-6 text-slate-700">
-                {attendanceCompleted
-                  ? "Today's attendance has been completed successfully."
-                  : "Attendance has not been recorded for today. Please complete it before processing payroll."}
-              </p>
-            </div>
-
-            <button
-              onClick={() => navigate("/attendance")}
-              className={`mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition ${
-                attendanceCompleted
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-[#1E3A8A] hover:bg-[#17307A]"
-              }`}
-            >
-              {attendanceCompleted
-                ? "View Attendance"
-                : "Mark Attendance"}
-
-              <ArrowRight size={18} />
-            </button>
-
-          </div>
-
         </div>
 
+        {/* ======================================================
+            RIGHT — ATTENDANCE
+        ====================================================== */}
+
+        <div className="min-w-0 lg:col-span-5 xl:col-span-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-5">
+            {/* HEADER */}
+
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                    attendanceCompleted
+                      ? "border border-emerald-100 bg-emerald-50 text-emerald-600"
+                      : "border border-amber-100 bg-amber-50 text-amber-600"
+                  }`}
+                >
+                  <CalendarCheck2
+                    size={20}
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                    Today's Attendance
+                  </p>
+
+                  <h2
+                    className={`text-base font-bold ${
+                      attendanceCompleted
+                        ? "text-emerald-600"
+                        : "text-amber-600"
+                    }`}
+                  >
+                    {attendanceCompleted
+                      ? "Completed"
+                      : "Pending"}
+                  </h2>
+                </div>
+              </div>
+
+              <span
+                className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                  attendanceCompleted
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-amber-100 text-amber-700"
+                }`}
+              >
+                {attendanceCompleted ? (
+                  <CheckCircle2
+                    size={12}
+                  />
+                ) : (
+                  <Clock size={12} />
+                )}
+
+                {completionPercentage}%
+              </span>
+            </div>
+
+            {/* PROGRESS */}
+
+            <div
+              className={`mt-4 rounded-xl border p-4 ${
+                attendanceCompleted
+                  ? "border-emerald-200 bg-emerald-50/40"
+                  : "border-amber-200 bg-amber-50/40"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-baseline gap-1">
+                  <span
+                    className={`text-2xl font-extrabold tracking-tight ${
+                      attendanceCompleted
+                        ? "text-emerald-700"
+                        : "text-amber-700"
+                    }`}
+                  >
+                    {actualRecordedWorkers}
+                  </span>
+
+                  <span className="text-xs font-semibold uppercase text-slate-500">
+                    / {totalWorkers}
+                  </span>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1 text-xs font-medium text-slate-600">
+                  <Users
+                    size={13}
+                    className="text-slate-400"
+                  />
+
+                  <span>
+                    {presentToday} Present
+                  </span>
+                </div>
+              </div>
+
+              <p
+                className={`mt-2 text-xs font-medium leading-relaxed ${
+                  attendanceCompleted
+                    ? "text-emerald-800"
+                    : "text-amber-800"
+                }`}
+              >
+                {attendanceCompleted
+                  ? "All active workers recorded for today."
+                  : totalWorkers ===
+                    0
+                  ? "No active workers found."
+                  : `${pendingWorkers} worker${
+                      pendingWorkers ===
+                      1
+                        ? ""
+                        : "s"
+                    } pending.`}
+              </p>
+
+              {totalWorkers >
+                0 && (
+                <div className="mt-3">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        attendanceCompleted
+                          ? "bg-emerald-500"
+                          : "bg-amber-500"
+                      }`}
+                      style={{
+                        width: `${completionPercentage}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STATUS SUMMARY */}
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-lg bg-white/70 p-2 text-center">
+                  <p className="text-xs text-slate-400">
+                    Present
+                  </p>
+
+                  <p className="mt-1 font-bold text-emerald-600">
+                    {presentToday}
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-white/70 p-2 text-center">
+                  <p className="text-xs text-slate-400">
+                    Absent
+                  </p>
+
+                  <p className="mt-1 font-bold text-rose-600">
+                    {absentToday}
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-white/70 p-2 text-center">
+                  <p className="text-xs text-slate-400">
+                    Leave
+                  </p>
+
+                  <p className="mt-1 font-bold text-amber-600">
+                    {leaveToday}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* BUTTON */}
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  "/attendance"
+                )
+              }
+              className={`group mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-semibold text-white transition-all duration-200 sm:text-sm ${
+                attendanceCompleted
+                  ? "bg-emerald-600 hover:bg-emerald-700"
+                  : "bg-blue-900 hover:bg-blue-950"
+              }`}
+            >
+              <span>
+                {attendanceCompleted
+                  ? "View Attendance"
+                  : "Mark Today's Attendance"}
+              </span>
+
+              <ArrowRight
+                size={15}
+                className="transition-transform duration-200 group-hover:translate-x-1"
+              />
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );

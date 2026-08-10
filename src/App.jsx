@@ -14,10 +14,14 @@ import StockPage from "./pages/Stock";
 import Payments from "./pages/Payments";
 import Client from "./pages/Client";
 import ClientProfile from "./pages/ClientProfile";
+import VendorPage from "./pages/VendorPage";
+import Purchase from "./pages/PurchasePage"; // <-- Purchase Page Import
+import Expenses from "./pages/Expenses";
 import Sales from "./pages/Sales";
-import ProtectedRoute from "./components/ProtectedRoute";
 import Production from "./pages/Production";
 import Report from "./pages/Reports";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 
 // Services & Redux Actions
 import { getCurrentUser } from "./services/authService";
@@ -32,8 +36,7 @@ function App() {
         const response = await getCurrentUser();
         dispatch(setUser(response.data.data));
       } catch (error) {
-        console.error(error);
-        console.log("No Active Session");
+        console.error("Session verification failed:", error);
         dispatch(finishLoading());
       }
     };
@@ -139,6 +142,27 @@ function App() {
         />
 
         <Route
+          path="/vendors"
+          element={
+            <ProtectedRoute>
+              <VendorPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/expenses" element={<Expenses />} />
+
+        {/* Purchase Route Added */}
+        <Route
+          path="/purchase"
+          element={
+            <ProtectedRoute>
+              <Purchase />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/sales"
           element={
             <ProtectedRoute>
@@ -157,7 +181,7 @@ function App() {
         />
 
         <Route
-        path="/reports"
+          path="/reports"
           element={
             <ProtectedRoute>
               <Report />

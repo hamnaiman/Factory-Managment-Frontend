@@ -1,24 +1,34 @@
 import API from "./api";
 
-// Save attendance
+// =====================================================
+// SAVE ATTENDANCE
+// =====================================================
+
 export const markAttendance = async (attendanceData) => {
   return await API.post("/attendance", attendanceData);
 };
 
-// Get today's attendance (optional, future use)
-export const getAttendance = async () => {
-  return await API.get("/attendance");
+// =====================================================
+// GET TODAY'S ATTENDANCE
+// =====================================================
+
+export const getTodayAttendance = async () => {
+  return await API.get("/attendance/today");
 };
 
-export const getAttendanceHistory = () =>
-  API.get("/attendance/history");
+// =====================================================
+// GET ATTENDANCE HISTORY
+// =====================================================
 
-
-
-export const getTodayAttendance = () => {
-  return API.get("/attendance/today");
+export const getAttendanceHistory = async () => {
+  return await API.get("/attendance/history");
 };
 
-export const getAttendanceByDate = (date) =>
-  API.get(`/attendance/${date}`);
+// =====================================================
+// GET ATTENDANCE BY SELECTED DATE
+// date format: YYYY-MM-DD
+// =====================================================
 
+export const getAttendanceByDate = async (date) => {
+  return await API.get(`/attendance/${date}`);
+};
