@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Bell, Menu, AlertTriangle, Info, PackageX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getNotifications } from "../services/notificationService";
+import { getNotifications } from "../services/Notificationservice";
 
 const POLL_INTERVAL_MS = 60000; // refresh every 60s
 
