@@ -235,17 +235,17 @@ function SaleModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-      <div className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/50 p-3 sm:items-center sm:p-4">
+      <div className="my-3 flex max-h-[calc(100vh-1.5rem)] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:my-4 sm:max-h-[95vh] sm:rounded-3xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">
+        <div className="flex shrink-0 items-start justify-between border-b border-slate-200 px-4 py-4 sm:items-center sm:px-6 sm:py-5">
+          <div className="min-w-0 pr-3">
+            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">
               {initialData ? "Edit Sale" : "Create New Sale"}
             </h2>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
               Fill in the details to generate an invoice.
             </p>
           </div>
@@ -254,7 +254,7 @@ function SaleModal({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+            className="shrink-0 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
           >
             <span className="sr-only">Close</span>
             ✕
@@ -262,7 +262,7 @@ function SaleModal({
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto px-6 py-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
 
           <form onSubmit={handleSubmit}>
 
@@ -313,7 +313,7 @@ function SaleModal({
             </div>
 
             {/* Products Table */}
-            <div className="mt-8 overflow-x-auto rounded-2xl border border-slate-200">
+            <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 sm:mt-8">
 
               {/* Header */}
               <div className="grid min-w-[700px] grid-cols-12 bg-slate-50 px-5 py-3.5 text-sm font-semibold text-slate-700">
@@ -452,7 +452,7 @@ function SaleModal({
             </div>
 
             {/* Bottom Summary */}
-            <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div className="mt-6 grid grid-cols-1 gap-5 lg:mt-8 lg:grid-cols-2 lg:gap-6">
 
               {/* Notes */}
               <div>
@@ -471,19 +471,19 @@ function SaleModal({
               </div>
 
               {/* Summary */}
-              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-6">
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
 
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between gap-4 text-sm">
                   <span className="font-medium text-slate-600">
                     Subtotal
                   </span>
 
-                  <span className="font-semibold text-slate-900">
+                  <span className="shrink-0 font-semibold text-slate-900">
                     Rs. {subtotal.toLocaleString()}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between gap-4 text-sm">
                   <span className="font-medium text-slate-600">
                     Discount (PKR)
                   </span>
@@ -498,21 +498,21 @@ function SaleModal({
                         : formData.discount
                     }
                     onChange={handleChange}
-                    className="h-10 w-32 rounded-xl border border-slate-200 px-3 text-right focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                    className="h-10 w-28 shrink-0 rounded-xl border border-slate-200 px-3 text-right focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] sm:w-32"
                   />
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-200 pt-3">
+                <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-3">
                   <span className="text-base font-bold text-slate-800">
                     Grand Total
                   </span>
 
-                  <span className="text-lg font-bold text-[#1E3A8A]">
+                  <span className="shrink-0 text-lg font-bold text-[#1E3A8A]">
                     Rs. {grandTotal.toLocaleString()}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between gap-4 text-sm">
                   <span className="font-medium text-slate-600">
                     Paid Amount (PKR)
                   </span>
@@ -527,16 +527,16 @@ function SaleModal({
                         : formData.paidAmount
                     }
                     onChange={handleChange}
-                    className="h-10 w-32 rounded-xl border border-slate-200 px-3 text-right focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                    className="h-10 w-28 shrink-0 rounded-xl border border-slate-200 px-3 text-right focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] sm:w-32"
                   />
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-200 pt-3">
+                <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-3">
                   <span className="text-base font-bold text-red-600">
                     Due Balance
                   </span>
 
-                  <span className="text-lg font-bold text-red-600">
+                  <span className="shrink-0 text-lg font-bold text-red-600">
                     Rs. {dueAmount.toLocaleString()}
                   </span>
                 </div>
@@ -545,7 +545,7 @@ function SaleModal({
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-8 flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:justify-end">
+            <div className="mt-6 flex flex-col-reverse gap-3 border-t pt-4 sm:mt-8 sm:flex-row sm:justify-end">
 
               <button
                 type="button"

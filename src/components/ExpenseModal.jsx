@@ -82,56 +82,50 @@ function ExpenseModal({
   // CLOUDINARY IMAGE UPLOAD
   // ============================================================
 
- const handleImageChange = async (e) => {
-  const file = e.target.files?.[0];
+  const handleImageChange = async (e) => {
+    const file = e.target.files?.[0];
 
-  // Allow same file to be selected again
-  e.target.value = "";
+    // Allow same file to be selected again
+    e.target.value = "";
 
-  if (!file) {
-    return;
-  }
-
-  setUploadingImage(true);
-  setUploadProgress(0);
-
-  try {
-    const fileData = await uploadToCloudinary(
-      file,
-      (percent) => {
-        setUploadProgress(percent);
-      }
-    );
-
-    if (!fileData?.url) {
-      throw new Error(
-        "Cloudinary did not return a secure image URL."
-      );
+    if (!file) {
+      return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      billImage: fileData.url,
-    }));
-
-    toast.success(
-      "Bill uploaded successfully."
-    );
-  } catch (error) {
-    console.error(
-      "Cloudinary expense bill upload error:",
-      error
-    );
-
-    toast.error(
-      error?.message ||
-        "Failed to upload bill image."
-    );
-  } finally {
-    setUploadingImage(false);
+    setUploadingImage(true);
     setUploadProgress(0);
-  }
-};
+
+    try {
+      const fileData = await uploadToCloudinary(file, (percent) => {
+        setUploadProgress(percent);
+      });
+
+      if (!fileData?.url) {
+        throw new Error(
+          "Cloudinary did not return a secure image URL."
+        );
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        billImage: fileData.url,
+      }));
+
+      toast.success("Bill uploaded successfully.");
+    } catch (error) {
+      console.error(
+        "Cloudinary expense bill upload error:",
+        error
+      );
+
+      toast.error(
+        error?.message || "Failed to upload bill image."
+      );
+    } finally {
+      setUploadingImage(false);
+      setUploadProgress(0);
+    }
+  };
 
   // ============================================================
   // REMOVE BILL IMAGE
@@ -196,7 +190,7 @@ function ExpenseModal({
   // ============================================================
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-3 sm:p-5">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-900/50 p-3 pt-6 sm:items-center sm:p-5">
       <div className="flex max-h-[95vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:rounded-3xl">
 
         {/* =====================================================
@@ -236,6 +230,7 @@ function ExpenseModal({
           <div className="space-y-5 p-4 sm:space-y-6 sm:p-6">
 
             {/* Expense Name */}
+
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                 Expense Name
@@ -254,9 +249,11 @@ function ExpenseModal({
             </div>
 
             {/* Category + Amount */}
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
               {/* Category */}
+
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                   Category
@@ -281,6 +278,7 @@ function ExpenseModal({
               </div>
 
               {/* Amount */}
+
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                   Amount
@@ -302,6 +300,7 @@ function ExpenseModal({
             </div>
 
             {/* Date */}
+
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                 Date
@@ -319,6 +318,7 @@ function ExpenseModal({
             </div>
 
             {/* Notes */}
+
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                 Notes
@@ -389,6 +389,7 @@ function ExpenseModal({
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
 
                   {/* Image Preview */}
+
                   <div className="relative">
                     <img
                       src={form.billImage}
@@ -398,6 +399,7 @@ function ExpenseModal({
                   </div>
 
                   {/* Image Actions */}
+
                   <div className="flex flex-col gap-2 border-t border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
 
                     <div className="flex min-w-0 items-center gap-2">
@@ -409,6 +411,7 @@ function ExpenseModal({
                     <div className="flex items-center gap-2">
 
                       {/* View */}
+
                       <a
                         href={form.billImage}
                         target="_blank"
@@ -420,6 +423,7 @@ function ExpenseModal({
                       </a>
 
                       {/* Remove */}
+
                       <button
                         type="button"
                         onClick={removeBillImage}
@@ -434,6 +438,7 @@ function ExpenseModal({
               )}
 
               {/* Upload Progress */}
+
               {uploadingImage && (
                 <div className="mt-2">
                   <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
