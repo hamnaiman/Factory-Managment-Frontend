@@ -47,8 +47,7 @@ const PurchaseModal = ({
   const [purchaseDate, setPurchaseDate] =
     useState(getToday());
 
-  const [paidAmount, setPaidAmount] =
-    useState(0);
+  const [paidAmount, setPaidAmount] = useState(0);
 
   const [notes, setNotes] = useState("");
   const [bill, setBill] = useState(null);
@@ -80,8 +79,7 @@ const PurchaseModal = ({
 
     const loadProducts = async () => {
       try {
-        const response =
-          await API.get("/products");
+        const response = await API.get("/products");
 
         const payload = response?.data;
 
@@ -92,9 +90,7 @@ const PurchaseModal = ({
             [];
 
         setProductsList(
-          Array.isArray(list)
-            ? list
-            : []
+          Array.isArray(list) ? list : []
         );
       } catch (error) {
         console.error(
@@ -220,9 +216,7 @@ const PurchaseModal = ({
 
         return {
           ...item,
-
           product: productId,
-
           productName:
             selectedProduct
               ? selectedProduct.productName
@@ -314,68 +308,67 @@ const PurchaseModal = ({
   // =====================================================
 
   const handleFileUpload = async (event) => {
-  const file = event.target.files?.[0];
+    const file =
+      event.target.files?.[0];
 
-  // Allow selecting the same file again
-  event.target.value = "";
+    event.target.value = "";
 
-  if (!file) {
-    return;
-  }
+    if (!file) return;
 
-  setUploadingBill(true);
-  setUploadProgress(0);
-
-  try {
-    const fileData = await uploadToCloudinary(
-      file,
-      (percent) => {
-        setUploadProgress(percent);
-      }
-    );
-
-    if (!fileData?.url) {
-      throw new Error(
-        "Cloudinary did not return a file URL."
-      );
-    }
-
-    setBill({
-      url: fileData.url,
-
-      fileName:
-        fileData.fileName ||
-        file.name,
-
-      fileType:
-        fileData.fileType ||
-        file.type,
-
-      publicId:
-        fileData.publicId || "",
-
-      resourceType:
-        fileData.resourceType || "",
-    });
-
-    toast.success(
-      "Bill document attached successfully."
-    );
-  } catch (error) {
-    console.error(
-      "Purchase bill upload error:",
-      error
-    );
-
-    toast.error(
-      error?.message ||
-        "Failed to upload bill attachment."
-    );
-  } finally {
-    setUploadingBill(false);
+    setUploadingBill(true);
     setUploadProgress(0);
-  }
-};
+
+    try {
+      const fileData =
+        await uploadToCloudinary(
+          file,
+          (percent) => {
+            setUploadProgress(percent);
+          }
+        );
+
+      if (!fileData?.url) {
+        throw new Error(
+          "Cloudinary did not return a file URL."
+        );
+      }
+
+      setBill({
+        url: fileData.url,
+
+        fileName:
+          fileData.fileName ||
+          file.name,
+
+        fileType:
+          fileData.fileType ||
+          file.type,
+
+        publicId:
+          fileData.publicId || "",
+
+        resourceType:
+          fileData.resourceType || "",
+      });
+
+      toast.success(
+        "Bill document attached successfully."
+      );
+    } catch (error) {
+      console.error(
+        "Purchase bill upload error:",
+        error
+      );
+
+      toast.error(
+        error?.message ||
+          "Failed to upload bill attachment."
+      );
+    } finally {
+      setUploadingBill(false);
+      setUploadProgress(0);
+    }
+  };
 
   // =====================================================
   // VALIDATION
@@ -458,7 +451,9 @@ const PurchaseModal = ({
 
     setErrors(newErrors);
 
-    if (Object.keys(newErrors).length > 0) {
+    if (
+      Object.keys(newErrors).length > 0
+    ) {
       return false;
     }
 
@@ -484,11 +479,6 @@ const PurchaseModal = ({
       typeof vendor === "object"
         ? vendor?._id
         : vendor;
-
-    // =================================================
-    // BACKEND PAYLOAD
-    // No Local / Imported / stockType
-    // =================================================
 
     const formattedItems =
       items.map((item) => {
@@ -619,10 +609,6 @@ const PurchaseModal = ({
     }
   };
 
-  // =====================================================
-  // MODAL CLOSED
-  // =====================================================
-
   if (!isOpen) {
     return null;
   }
@@ -632,23 +618,74 @@ const PurchaseModal = ({
   // =====================================================
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-3 sm:p-5 backdrop-blur-sm">
-      <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl">
+    <div
+      className="
+        fixed inset-0 z-[100]
+        flex items-start justify-center
+        bg-slate-950/55
+        p-2
+        pt-2
+        sm:items-center
+        sm:p-4
+        md:p-5
+        backdrop-blur-sm
+      "
+    >
+      <div
+        className="
+          flex w-full max-w-5xl
+          flex-col
+          overflow-hidden
+          rounded-2xl
+          bg-white
+          shadow-2xl
 
+          h-[calc(100dvh-16px)]
+          max-h-[calc(100dvh-16px)]
+
+          sm:h-auto
+          sm:max-h-[94vh]
+          sm:rounded-3xl
+        "
+      >
         {/* =================================================
             HEADER
         ================================================= */}
 
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50/80 px-4 py-3.5 backdrop-blur sm:px-6 sm:py-4">
-          <div>
-            <h3 className="text-base font-bold text-slate-800 sm:text-lg">
+        <div
+          className="
+            flex shrink-0 items-center justify-between
+            border-b border-slate-200
+            bg-slate-50/95
+            px-4 py-3
+            sm:px-6 sm:py-4
+          "
+        >
+          <div className="min-w-0 pr-3">
+            <h3
+              className="
+                truncate
+                text-base font-bold
+                text-slate-800
+                sm:text-lg
+              "
+            >
               {purchase
                 ? "Edit Purchase Record"
                 : "Record New Purchase"}
             </h3>
 
-            <p className="mt-0.5 text-xs text-slate-500">
-              Record purchased products and update stock.
+            <p
+              className="
+                mt-0.5
+                hidden
+                text-xs
+                text-slate-500
+                sm:block
+              "
+            >
+              Record purchased products and
+              update stock.
             </p>
           </div>
 
@@ -656,7 +693,17 @@ const PurchaseModal = ({
             type="button"
             onClick={onClose}
             disabled={submitting}
-            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200/60 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="
+              shrink-0
+              rounded-xl
+              p-2
+              text-slate-400
+              transition
+              hover:bg-slate-200
+              hover:text-slate-600
+              disabled:cursor-not-allowed
+              disabled:opacity-50
+            "
             aria-label="Close"
           >
             <X size={20} />
@@ -669,113 +716,156 @@ const PurchaseModal = ({
 
         <form
           onSubmit={handleSubmit}
-          className="flex-1 space-y-5 overflow-y-auto p-4 sm:space-y-6 sm:p-6"
+          className="
+            flex min-h-0 flex-1
+            flex-col
+          "
         >
+          {/* SCROLLABLE CONTENT */}
 
-          {/* =================================================
-              BASIC INFORMATION
-          ================================================= */}
+          <div
+            className="
+              flex-1
+              min-h-0
+              overflow-y-auto
+              overscroll-contain
+              px-3.5
+              py-4
+              sm:px-6
+              sm:py-6
+            "
+          >
+            {/* =================================================
+                BASIC INFORMATION
+            ================================================= */}
 
-          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
+            <div
+              className="
+                grid
+                grid-cols-1
+                gap-3.5
+                sm:grid-cols-2
+                lg:grid-cols-3
+                sm:gap-4
+              "
+            >
+              {/* Invoice */}
 
-            {/* Invoice */}
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 sm:text-sm">
-                Invoice #
-                <span className="text-red-500">
-                  {" "}*
-                </span>
-              </label>
-
-              <input
-                type="text"
-                required
-                value={invoiceNumber}
-                onChange={(event) =>
-                  setInvoiceNumber(
-                    event.target.value
-                  )
-                }
-                placeholder="INV-100021"
-                className={`w-full rounded-xl border px-3.5 py-2 text-sm text-slate-800 outline-none transition sm:py-2.5 ${
-                  errors.invoiceNumber
-                    ? "border-red-500 focus:ring-2 focus:ring-red-100"
-                    : "border-slate-200 focus:border-[#1E3A8A] focus:ring-2 focus:ring-[#1E3A8A]/10"
-                }`}
-              />
-
-              {errors.invoiceNumber && (
-                <p className="mt-1 text-xs text-red-500">
-                  {
-                    errors.invoiceNumber
-                  }
-                </p>
-              )}
-            </div>
-
-            {/* Vendor */}
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 sm:text-sm">
-                Vendor
-                <span className="text-red-500">
-                  {" "}*
-                </span>
-              </label>
-
-              <VendorSelect
-                value={vendor}
-                onChange={(value) =>
-                  setVendor(value)
-                }
-                className={`w-full ${
-                  errors.vendor
-                    ? "border-red-500"
-                    : ""
-                }`}
-              />
-
-              {errors.vendor && (
-                <p className="mt-1 text-xs text-red-500">
-                  {errors.vendor}
-                </p>
-              )}
-            </div>
-
-            {/* Date */}
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 sm:text-sm">
-                Purchase Date
-                <span className="text-red-500">
-                  {" "}*
-                </span>
-              </label>
-
-              <input
-                type="date"
-                required
-                value={purchaseDate}
-                onChange={(event) =>
-                  setPurchaseDate(
-                    event.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm text-slate-800 outline-none transition focus:border-[#1E3A8A] focus:ring-2 focus:ring-[#1E3A8A]/10 sm:py-2.5"
-              />
-            </div>
-
-          </div>
-
-          {/* =================================================
-              PURCHASED ITEMS
-          ================================================= */}
-
-          <div>
-            <div className="mb-2 flex items-center justify-between">
               <div>
-                <label className="text-xs font-bold text-slate-800 sm:text-sm">
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700 sm:text-sm">
+                  Invoice #
+                  <span className="text-red-500">
+                    {" "}*
+                  </span>
+                </label>
+
+                <input
+                  type="text"
+                  required
+                  value={invoiceNumber}
+                  onChange={(event) =>
+                    setInvoiceNumber(
+                      event.target.value
+                    )
+                  }
+                  placeholder="INV-100021"
+                  className={`
+                    w-full
+                    rounded-xl
+                    border
+                    px-3.5 py-2.5
+                    text-sm
+                    text-slate-800
+                    outline-none
+                    transition
+                    ${
+                      errors.invoiceNumber
+                        ? "border-red-500 focus:ring-2 focus:ring-red-100"
+                        : "border-slate-200 focus:border-[#1E3A8A] focus:ring-2 focus:ring-[#1E3A8A]/10"
+                    }
+                  `}
+                />
+
+                {errors.invoiceNumber && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.invoiceNumber}
+                  </p>
+                )}
+              </div>
+
+              {/* Vendor */}
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700 sm:text-sm">
+                  Vendor
+                  <span className="text-red-500">
+                    {" "}*
+                  </span>
+                </label>
+
+                <VendorSelect
+                  value={vendor}
+                  onChange={(value) =>
+                    setVendor(value)
+                  }
+                  className={`w-full ${
+                    errors.vendor
+                      ? "border-red-500"
+                      : ""
+                  }`}
+                />
+
+                {errors.vendor && (
+                  <p className="mt-1 text-xs text-red-500">
+                    {errors.vendor}
+                  </p>
+                )}
+              </div>
+
+              {/* Date */}
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700 sm:text-sm">
+                  Purchase Date
+                  <span className="text-red-500">
+                    {" "}*
+                  </span>
+                </label>
+
+                <input
+                  type="date"
+                  required
+                  value={purchaseDate}
+                  onChange={(event) =>
+                    setPurchaseDate(
+                      event.target.value
+                    )
+                  }
+                  className="
+                    w-full
+                    rounded-xl
+                    border
+                    border-slate-200
+                    px-3.5 py-2.5
+                    text-sm
+                    text-slate-800
+                    outline-none
+                    transition
+                    focus:border-[#1E3A8A]
+                    focus:ring-2
+                    focus:ring-[#1E3A8A]/10
+                  "
+                />
+              </div>
+            </div>
+
+            {/* =================================================
+                PURCHASED ITEMS
+            ================================================= */}
+
+            <div className="mt-6">
+              <div className="mb-3">
+                <label className="text-sm font-bold text-slate-800">
                   Purchased Items
                   <span className="text-red-500">
                     {" "}*
@@ -783,40 +873,102 @@ const PurchaseModal = ({
                 </label>
 
                 <p className="mt-0.5 text-[11px] text-slate-400 sm:text-xs">
-                  Add the products purchased from this vendor.
+                  Add the products purchased
+                  from this vendor.
                 </p>
               </div>
-            </div>
 
-            <div className="space-y-3">
+              <div className="space-y-3">
+                {items.map(
+                  (item, index) => {
+                    const quantity =
+                      Number(
+                        item.quantity
+                      ) || 0;
 
-              {items.map(
-                (item, index) => {
-                  const quantity =
-                    Number(
-                      item.quantity
-                    ) || 0;
+                    const rate =
+                      Number(item.rate) ||
+                      0;
 
-                  const rate =
-                    Number(
-                      item.rate
-                    ) || 0;
+                    const lineTotal =
+                      quantity * rate;
 
-                  const lineTotal =
-                    quantity * rate;
+                    return (
+                      <div
+                        key={index}
+                        className="
+                          relative
+                          rounded-2xl
+                          border
+                          border-slate-200
+                          bg-slate-50/70
+                          p-3
+                          sm:p-3.5
+                        "
+                      >
+                        {/* Item number + remove */}
 
-                  return (
-                    <div
-                      key={index}
-                      className="rounded-2xl border border-slate-200 bg-slate-50/60 p-3 sm:p-3.5"
-                    >
+                        <div className="mb-3 flex items-center justify-between">
+                          <div
+                            className="
+                              flex items-center
+                              gap-2
+                            "
+                          >
+                            <span
+                              className="
+                                flex h-6 w-6
+                                items-center
+                                justify-center
+                                rounded-lg
+                                bg-blue-100
+                                text-[10px]
+                                font-bold
+                                text-[#1E3A8A]
+                              "
+                            >
+                              {index + 1}
+                            </span>
 
-                      <div className="grid grid-cols-12 items-end gap-2.5 sm:gap-3">
+                            <span className="text-xs font-semibold text-slate-600">
+                              Product Item
+                            </span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              removeItemRow(
+                                index
+                              )
+                            }
+                            className="
+                              flex
+                              h-8 w-8
+                              items-center
+                              justify-center
+                              rounded-lg
+                              border
+                              border-slate-200
+                              bg-white
+                              text-slate-400
+                              transition
+                              hover:border-red-200
+                              hover:bg-red-50
+                              hover:text-red-600
+                            "
+                            title="Remove item"
+                          >
+                            <Trash2
+                              size={15}
+                            />
+                          </button>
+                        </div>
 
                         {/* Product */}
 
-                        <div className="col-span-12 lg:col-span-5">
-                          <label className="mb-1 block text-[11px] font-semibold text-slate-500 lg:text-xs">
+                        <div>
+                          <label className="mb-1 block text-[11px] font-semibold text-slate-500">
                             Product
                             <span className="text-red-500">
                               {" "}*
@@ -832,13 +984,30 @@ const PurchaseModal = ({
                                   ""
                                 : item.product
                             }
-                            onChange={(event) =>
+                            onChange={(
+                              event
+                            ) =>
                               handleProductSelect(
                                 index,
                                 event.target.value
                               )
                             }
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none transition focus:border-[#1E3A8A] focus:ring-2 focus:ring-[#1E3A8A]/10 sm:text-sm"
+                            className="
+                              w-full
+                              rounded-xl
+                              border
+                              border-slate-200
+                              bg-white
+                              px-3
+                              py-2.5
+                              text-sm
+                              text-slate-800
+                              outline-none
+                              transition
+                              focus:border-[#1E3A8A]
+                              focus:ring-2
+                              focus:ring-[#1E3A8A]/10
+                            "
                           >
                             <option value="">
                               {productsList.length ===
@@ -870,340 +1039,533 @@ const PurchaseModal = ({
                           </select>
                         </div>
 
-                        {/* Quantity */}
+                        {/* Mobile fields */}
 
-                        <div className="col-span-6 sm:col-span-3 lg:col-span-2">
-                          <label className="mb-1 block text-[11px] font-semibold text-slate-500 lg:text-xs">
-                            Quantity
-                            <span className="text-red-500">
-                              {" "}*
-                            </span>
-                          </label>
+                        <div
+                          className="
+                            mt-3
+                            grid
+                            grid-cols-2
+                            gap-2.5
+                            sm:grid-cols-3
+                            sm:gap-3
+                          "
+                        >
+                          {/* Quantity */}
 
-                          <input
-                            type="number"
-                            min="0.01"
-                            step="any"
-                            required
-                            value={
-                              item.quantity
-                            }
-                            onChange={(event) =>
-                              handleItemChange(
-                                index,
-                                "quantity",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Qty"
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none transition focus:border-[#1E3A8A] focus:ring-2 focus:ring-[#1E3A8A]/10 sm:text-sm"
-                          />
-                        </div>
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold text-slate-500">
+                              Quantity
+                              <span className="text-red-500">
+                                {" "}*
+                              </span>
+                            </label>
 
-                        {/* Rate */}
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="any"
+                              required
+                              value={
+                                item.quantity
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                handleItemChange(
+                                  index,
+                                  "quantity",
+                                  event.target
+                                    .value
+                                )
+                              }
+                              placeholder="Qty"
+                              className="
+                                w-full
+                                rounded-xl
+                                border
+                                border-slate-200
+                                bg-white
+                                px-3
+                                py-2.5
+                                text-sm
+                                text-slate-800
+                                outline-none
+                                transition
+                                focus:border-[#1E3A8A]
+                                focus:ring-2
+                                focus:ring-[#1E3A8A]/10
+                              "
+                            />
+                          </div>
 
-                        <div className="col-span-6 sm:col-span-3 lg:col-span-2">
-                          <label className="mb-1 block text-[11px] font-semibold text-slate-500 lg:text-xs">
-                            Rate (PKR)
-                            <span className="text-red-500">
-                              {" "}*
-                            </span>
-                          </label>
+                          {/* Rate */}
 
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            required
-                            value={
-                              item.rate
-                            }
-                            onChange={(event) =>
-                              handleItemChange(
-                                index,
-                                "rate",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Rate"
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none transition focus:border-[#1E3A8A] focus:ring-2 focus:ring-[#1E3A8A]/10 sm:text-sm"
-                          />
-                        </div>
+                          <div>
+                            <label className="mb-1 block text-[11px] font-semibold text-slate-500">
+                              Rate (PKR)
+                              <span className="text-red-500">
+                                {" "}*
+                              </span>
+                            </label>
 
-                        {/* Subtotal */}
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              required
+                              value={
+                                item.rate
+                              }
+                              onChange={(
+                                event
+                              ) =>
+                                handleItemChange(
+                                  index,
+                                  "rate",
+                                  event.target
+                                    .value
+                                )
+                              }
+                              placeholder="Rate"
+                              className="
+                                w-full
+                                rounded-xl
+                                border
+                                border-slate-200
+                                bg-white
+                                px-3
+                                py-2.5
+                                text-sm
+                                text-slate-800
+                                outline-none
+                                transition
+                                focus:border-[#1E3A8A]
+                                focus:ring-2
+                                focus:ring-[#1E3A8A]/10
+                              "
+                            />
+                          </div>
 
-                        <div className="col-span-10 sm:col-span-4 lg:col-span-2">
-                          <label className="mb-1 block text-[11px] font-semibold text-slate-500 lg:text-xs">
-                            Subtotal
-                          </label>
+                          {/* Subtotal */}
 
-                          <div className="flex h-[38px] items-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 sm:text-sm">
-                            PKR{" "}
-                            {lineTotal.toLocaleString(
-                              "en-PK"
-                            )}
+                          <div className="col-span-2 sm:col-span-1">
+                            <label className="mb-1 block text-[11px] font-semibold text-slate-500">
+                              Subtotal
+                            </label>
+
+                            <div
+                              className="
+                                flex
+                                min-h-[42px]
+                                items-center
+                                rounded-xl
+                                border
+                                border-blue-100
+                                bg-blue-50/70
+                                px-3
+                                text-sm
+                                font-bold
+                                text-[#1E3A8A]
+                              "
+                            >
+                              PKR{" "}
+                              {lineTotal.toLocaleString(
+                                "en-PK"
+                              )}
+                            </div>
                           </div>
                         </div>
-
-                        {/* Remove */}
-
-                        <div className="col-span-2 sm:col-span-1">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeItemRow(
-                                index
-                              )
-                            }
-                            className="flex h-[38px] w-full items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                            title="Remove item"
-                          >
-                            <Trash2
-                              size={16}
-                            />
-                          </button>
-                        </div>
-
                       </div>
-                    </div>
-                  );
-                }
-              )}
+                    );
+                  }
+                )}
+              </div>
 
+              {/* Add item */}
+
+              <button
+                type="button"
+                onClick={addItemRow}
+                className="
+                  mt-3
+                  inline-flex
+                  items-center
+                  gap-1.5
+                  rounded-xl
+                  border
+                  border-blue-100
+                  bg-blue-50/50
+                  px-3
+                  py-2
+                  text-xs
+                  font-semibold
+                  text-[#1E3A8A]
+                  transition
+                  hover:bg-blue-50
+                "
+              >
+                <Plus size={15} />
+                Add Product Item
+              </button>
             </div>
 
-            {/* Add item */}
+            {/* =================================================
+                TOTALS
+            ================================================= */}
 
-            <button
-              type="button"
-              onClick={addItemRow}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-lg p-1 text-xs font-semibold text-[#1E3A8A] transition hover:bg-blue-50 hover:underline"
+            <div
+              className="
+                mt-6
+                rounded-2xl
+                border
+                border-blue-100
+                bg-blue-50/60
+                p-3.5
+                sm:p-4
+              "
             >
-              <Plus size={16} />
-              Add Product Item
-            </button>
-          </div>
+              <div
+                className="
+                  flex
+                  flex-col
+                  gap-4
+                  sm:flex-row
+                  sm:items-center
+                  sm:justify-between
+                "
+              >
+                <div>
+                  <p className="text-[11px] font-medium text-slate-500">
+                    Total Purchase Amount
+                  </p>
 
-          {/* =================================================
-              TOTALS
-          ================================================= */}
-
-          <div className="flex flex-col gap-4 rounded-2xl border border-blue-100 bg-blue-50/60 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-
-            <div>
-              <p className="text-[11px] font-medium text-slate-500 sm:text-xs">
-                Total Purchase Amount
-              </p>
-
-              <p className="mt-0.5 text-xl font-bold text-[#1E3A8A] sm:text-2xl">
-                PKR{" "}
-                {runningTotal.toLocaleString(
-                  "en-PK"
-                )}
-              </p>
-            </div>
-
-            <div className="w-full sm:w-auto">
-              <label className="mb-1 block text-xs font-semibold text-slate-700">
-                Paid Amount (PKR)
-              </label>
-
-              <input
-                type="number"
-                min="0"
-                step="any"
-                value={paidAmount}
-                onChange={(event) =>
-                  setPaidAmount(
-                    event.target.value
-                  )
-                }
-                placeholder="0"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-800 outline-none transition focus:border-[#1E3A8A] focus:ring-2 focus:ring-[#1E3A8A]/10 sm:w-52"
-              />
-
-              <p className="mt-1 text-[10px] text-slate-400">
-                Remaining: PKR{" "}
-                {Math.max(
-                  runningTotal -
-                    (Number(
-                      paidAmount
-                    ) || 0),
-                  0
-                ).toLocaleString(
-                  "en-PK"
-                )}
-              </p>
-            </div>
-
-          </div>
-
-          {/* =================================================
-              BILL + NOTES
-          ================================================= */}
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-            {/* Bill */}
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 sm:text-sm">
-                Attach Bill Document{" "}
-                <span className="text-xs font-normal text-slate-400">
-                  (Optional)
-                </span>
-              </label>
-
-              {bill?.url ? (
-                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3">
-
-                  <div className="mr-2 flex min-w-0 items-center gap-2">
-                    <FileText
-                      size={18}
-                      className="shrink-0 text-[#1E3A8A]"
-                    />
-
-                    <span className="truncate text-xs font-medium text-slate-700">
-                      {bill.fileName ||
-                        "Uploaded Document"}
-                    </span>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-2">
-
-                    <a
-                      href={bill.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 text-xs font-medium text-[#1E3A8A] hover:underline"
-                    >
-                      View
-                      <ExternalLink
-                        size={12}
-                      />
-                    </a>
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setBill(null)
-                      }
-                      className="ml-1.5 text-xs font-bold text-red-500 hover:text-red-700"
-                    >
-                      Remove
-                    </button>
-
-                  </div>
+                  <p className="mt-0.5 text-xl font-bold text-[#1E3A8A] sm:text-2xl">
+                    PKR{" "}
+                    {runningTotal.toLocaleString(
+                      "en-PK"
+                    )}
+                  </p>
                 </div>
-              ) : (
-                <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/30 p-3.5 text-center transition hover:border-[#1E3A8A]">
 
-                  {uploadingBill ? (
-                    <div className="flex items-center justify-center gap-2 py-1 text-xs text-slate-600">
-                      <Loader2
-                        size={16}
-                        className="animate-spin text-[#1E3A8A]"
-                      />
+                <div className="w-full sm:w-auto">
+                  <label className="mb-1 block text-xs font-semibold text-slate-700">
+                    Paid Amount (PKR)
+                  </label>
 
-                      <span>
-                        Uploading (
-                        {
-                          uploadProgress
-                        }
-                        %)...
-                      </span>
-                    </div>
-                  ) : (
-                    <label className="block cursor-pointer">
-                      <Upload
+                  <input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={paidAmount}
+                    onChange={(event) =>
+                      setPaidAmount(
+                        event.target.value
+                      )
+                    }
+                    placeholder="0"
+                    className="
+                      w-full
+                      rounded-xl
+                      border
+                      border-slate-200
+                      bg-white
+                      px-3.5
+                      py-2.5
+                      text-sm
+                      text-slate-800
+                      outline-none
+                      transition
+                      focus:border-[#1E3A8A]
+                      focus:ring-2
+                      focus:ring-[#1E3A8A]/10
+                      sm:w-52
+                    "
+                  />
+
+                  <p className="mt-1 text-[10px] text-slate-400">
+                    Remaining: PKR{" "}
+                    {Math.max(
+                      runningTotal -
+                        (Number(
+                          paidAmount
+                        ) || 0),
+                      0
+                    ).toLocaleString(
+                      "en-PK"
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* =================================================
+                BILL + NOTES
+            ================================================= */}
+
+            <div
+              className="
+                mt-6
+                grid
+                grid-cols-1
+                gap-4
+                md:grid-cols-2
+              "
+            >
+              {/* Bill */}
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700 sm:text-sm">
+                  Attach Bill Document{" "}
+                  <span className="text-xs font-normal text-slate-400">
+                    (Optional)
+                  </span>
+                </label>
+
+                {bill?.url ? (
+                  <div
+                    className="
+                      flex
+                      items-center
+                      justify-between
+                      gap-2
+                      rounded-xl
+                      border
+                      border-slate-200
+                      bg-slate-50
+                      p-3
+                    "
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <FileText
                         size={18}
-                        className="mx-auto mb-1 text-slate-400"
+                        className="shrink-0 text-[#1E3A8A]"
                       />
 
-                      <span className="block text-xs font-medium text-slate-600">
-                        Upload bill document
+                      <span className="truncate text-xs font-medium text-slate-700">
+                        {bill.fileName ||
+                          "Uploaded Document"}
                       </span>
+                    </div>
 
-                      <span className="mt-0.5 block text-[10px] text-slate-400">
-                        PDF, JPG or PNG
-                      </span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <a
+                        href={bill.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="
+                          flex
+                          items-center
+                          gap-1
+                          text-xs
+                          font-medium
+                          text-[#1E3A8A]
+                          hover:underline
+                        "
+                      >
+                        View
+                        <ExternalLink
+                          size={12}
+                        />
+                      </a>
 
-                      <input
-                        type="file"
-                        accept="application/pdf,image/jpeg,image/png,image/webp"
-                        onChange={
-                          handleFileUpload
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setBill(null)
                         }
-                        className="hidden"
-                      />
-                    </label>
-                  )}
+                        className="
+                          text-xs
+                          font-bold
+                          text-red-500
+                          hover:text-red-700
+                        "
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="
+                      rounded-xl
+                      border-2
+                      border-dashed
+                      border-slate-200
+                      bg-slate-50/30
+                      p-4
+                      text-center
+                      transition
+                      hover:border-[#1E3A8A]
+                    "
+                  >
+                    {uploadingBill ? (
+                      <div className="flex items-center justify-center gap-2 py-1 text-xs text-slate-600">
+                        <Loader2
+                          size={16}
+                          className="animate-spin text-[#1E3A8A]"
+                        />
 
-                </div>
-              )}
+                        <span>
+                          Uploading (
+                          {
+                            uploadProgress
+                          }
+                          %)...
+                        </span>
+                      </div>
+                    ) : (
+                      <label className="block cursor-pointer">
+                        <Upload
+                          size={18}
+                          className="mx-auto mb-1 text-slate-400"
+                        />
+
+                        <span className="block text-xs font-medium text-slate-600">
+                          Upload bill document
+                        </span>
+
+                        <span className="mt-0.5 block text-[10px] text-slate-400">
+                          PDF, JPG or PNG
+                        </span>
+
+                        <input
+                          type="file"
+                          accept="application/pdf,image/jpeg,image/png,image/webp"
+                          onChange={
+                            handleFileUpload
+                          }
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Notes */}
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-slate-700 sm:text-sm">
+                  Notes / Remarks
+                </label>
+
+                <textarea
+                  rows={4}
+                  value={notes}
+                  onChange={(event) =>
+                    setNotes(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Optional remarks..."
+                  className="
+                    w-full
+                    resize-none
+                    rounded-xl
+                    border
+                    border-slate-200
+                    px-3.5
+                    py-2.5
+                    text-sm
+                    text-slate-800
+                    outline-none
+                    transition
+                    focus:border-[#1E3A8A]
+                    focus:ring-2
+                    focus:ring-[#1E3A8A]/10
+                  "
+                />
+              </div>
             </div>
-
-            {/* Notes */}
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-slate-700 sm:text-sm">
-                Notes / Remarks
-              </label>
-
-              <textarea
-                rows={4}
-                value={notes}
-                onChange={(event) =>
-                  setNotes(
-                    event.target.value
-                  )
-                }
-                placeholder="Optional remarks..."
-                className="w-full resize-none rounded-xl border border-slate-200 px-3.5 py-2 text-xs text-slate-800 outline-none transition focus:border-[#1E3A8A] focus:ring-2 focus:ring-[#1E3A8A]/10 sm:text-sm"
-              />
-            </div>
-
           </div>
 
           {/* =================================================
-              FOOTER
+              FIXED FOOTER
           ================================================= */}
 
-          <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-slate-100 pt-3 sm:gap-3 sm:pt-4">
+          <div
+            className="
+              shrink-0
+              border-t
+              border-slate-200
+              bg-white
+              px-3.5
+              py-3
+              sm:px-6
+              sm:py-4
+            "
+          >
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={submitting}
+                className="
+                  w-1/2
+                  rounded-xl
+                  border
+                  border-slate-200
+                  px-4
+                  py-2.5
+                  text-xs
+                  font-medium
+                  text-slate-600
+                  transition
+                  hover:bg-slate-50
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  sm:w-auto
+                  sm:px-5
+                  sm:text-sm
+                "
+              >
+                Cancel
+              </button>
 
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="w-1/2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-5 sm:text-sm"
-            >
-              Cancel
-            </button>
+              <button
+                type="submit"
+                disabled={
+                  submitting ||
+                  uploadingBill
+                }
+                className="
+                  flex
+                  w-1/2
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-[#1E3A8A]
+                  px-5
+                  py-2.5
+                  text-xs
+                  font-medium
+                  text-white
+                  transition
+                  hover:bg-[#17307A]
+                  disabled:cursor-not-allowed
+                  disabled:opacity-50
+                  sm:w-auto
+                  sm:px-6
+                  sm:text-sm
+                "
+              >
+                {submitting && (
+                  <Loader2
+                    size={14}
+                    className="animate-spin"
+                  />
+                )}
 
-            <button
-              type="submit"
-              disabled={
-                submitting ||
-                uploadingBill
-              }
-              className="flex w-1/2 items-center justify-center gap-2 rounded-xl bg-[#1E3A8A] px-5 py-2.5 text-xs font-medium text-white transition hover:bg-[#17307A] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-6 sm:text-sm"
-            >
-              {submitting && (
-                <Loader2
-                  size={14}
-                  className="animate-spin"
-                />
-              )}
-
-              {submitting
-                ? "Saving..."
-                : purchase
-                ? "Update Purchase"
-                : "Save Purchase"}
-            </button>
-
+                {submitting
+                  ? "Saving..."
+                  : purchase
+                  ? "Update Purchase"
+                  : "Save Purchase"}
+              </button>
+            </div>
           </div>
-
         </form>
       </div>
     </div>

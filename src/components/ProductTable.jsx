@@ -22,7 +22,179 @@ function ProductTable({
 
   return (
     <>
-      <div className="w-full overflow-x-auto">
+      {/* =========================================================
+          MOBILE CARDS
+          Only visible below md breakpoint
+      ========================================================= */}
+      <div className="block md:hidden">
+        <div className="space-y-3">
+          {products.map((product) => {
+            const currentStock = Number(
+              product.currentStock || 0
+            );
+
+            const minimumStock = Number(
+              product.minimumStock || 0
+            );
+
+            const isLowStock =
+              currentStock <= minimumStock;
+
+            const isActive =
+              product.status === "active";
+
+            return (
+              <div
+                key={product._id}
+                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+              >
+                {/* Top Section */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-slate-900 break-words">
+                      {product.productName}
+                    </div>
+
+                    <div className="text-xs text-slate-400 font-mono mt-1 break-all">
+                      {product.productCode}
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <span
+                    className={`shrink-0 inline-flex rounded-full px-3 py-1 text-xs font-semibold border ${
+                      isActive
+                        ? "bg-green-50 border-green-200 text-green-700"
+                        : "bg-red-50 border-red-200 text-red-700"
+                    }`}
+                  >
+                    {isActive ? "Active" : "Inactive"}
+                  </span>
+                </div>
+
+                {/* Product Details */}
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {/* Category */}
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Category
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium text-slate-800 break-words">
+                      {product.category}
+                    </p>
+                  </div>
+
+                  {/* Color */}
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Color
+                    </p>
+
+                    <p className="mt-1 text-sm text-slate-800 break-words">
+                      {product.color}
+                    </p>
+                  </div>
+
+                  {/* Unit */}
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Unit
+                    </p>
+
+                    <span className="mt-1 inline-flex rounded-lg bg-slate-200 px-2.5 py-1 text-xs font-bold text-slate-700">
+                      Kg
+                    </span>
+                  </div>
+
+                  {/* Stock */}
+                  <div
+                    className={`rounded-xl p-3 ${
+                      isLowStock
+                        ? "bg-orange-50"
+                        : "bg-slate-50"
+                    }`}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                      Stock
+                    </p>
+
+                    <div
+                      className={`mt-1 font-bold ${
+                        isLowStock
+                          ? "text-orange-600"
+                          : "text-slate-900"
+                      }`}
+                    >
+                      {currentStock} Kg
+                    </div>
+
+                    <div className="text-[11px] text-slate-400 mt-0.5">
+                      Minimum: {minimumStock} Kg
+                    </div>
+                  </div>
+                </div>
+
+                {/* Low Stock Warning */}
+                {isLowStock && (
+                  <div className="mt-3 flex items-center gap-1.5 rounded-xl bg-orange-50 border border-orange-200 px-3 py-2">
+                    <AlertTriangle
+                      size={13}
+                      className="shrink-0 text-orange-600"
+                    />
+
+                    <span className="text-xs font-bold text-orange-600">
+                      Low Stock
+                    </span>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                  <button
+                    onClick={() => onEdit(product)}
+                    title="Edit Product"
+                    className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition"
+                  >
+                    <Edit2 size={15} />
+                    Edit
+                  </button>
+
+                  {isActive ? (
+                    <button
+                      onClick={() =>
+                        setConfirmId(product._id)
+                      }
+                      title="Deactivate Product"
+                      className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
+                    >
+                      <EyeOff size={15} />
+                      Deactivate
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        onRestore(product._id)
+                      }
+                      title="Restore Product"
+                      className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-xs font-semibold text-green-600 hover:bg-green-100 transition"
+                    >
+                      <RotateCcw size={15} />
+                      Restore
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* =========================================================
+          DESKTOP TABLE
+          Existing table preserved
+      ========================================================= */}
+      <div className="hidden md:block w-full overflow-x-auto">
         <table className="w-full min-w-[850px]">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>

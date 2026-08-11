@@ -302,7 +302,7 @@ function Stock() {
           </div>
 
           {/* -----------------------------------------
-              TABLE
+              STOCK DATA
           ----------------------------------------- */}
 
           <div className="w-full bg-white rounded-3xl border border-slate-200 overflow-hidden">
@@ -339,161 +339,324 @@ function Stock() {
 
             ) : (
 
-              <div className="overflow-x-auto">
+              <>
+                {/* =================================================
+                    LARGE SCREEN — EXISTING TABLE
+                ================================================= */}
 
-                <table className="w-full text-left text-sm text-slate-600">
+                <div className="hidden lg:block overflow-x-auto">
 
-                  <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
+                  <table className="w-full text-left text-sm text-slate-600">
 
-                    <tr>
+                    <thead className="bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold">
 
-                      <th className="px-6 py-4">
-                        Product
-                      </th>
+                      <tr>
 
-                      <th className="px-6 py-4">
-                        Category
-                      </th>
+                        <th className="px-6 py-4">
+                          Product
+                        </th>
 
-                      <th className="px-6 py-4">
-                        Unit
-                      </th>
+                        <th className="px-6 py-4">
+                          Category
+                        </th>
 
-                      <th className="px-6 py-4 text-right">
-                        Current Stock
-                      </th>
+                        <th className="px-6 py-4">
+                          Unit
+                        </th>
 
-                      <th className="px-6 py-4 text-right">
-                        Minimum Stock
-                      </th>
+                        <th className="px-6 py-4 text-right">
+                          Current Stock
+                        </th>
 
-                      <th className="px-6 py-4 text-center">
-                        Status
-                      </th>
+                        <th className="px-6 py-4 text-right">
+                          Minimum Stock
+                        </th>
 
-                    </tr>
-                  </thead>
+                        <th className="px-6 py-4 text-center">
+                          Status
+                        </th>
 
-                  <tbody className="divide-y divide-slate-200">
+                      </tr>
 
-                    {visibleProducts.map((item) => {
+                    </thead>
 
-                      const totalQty = getQty(item);
+                    <tbody className="divide-y divide-slate-200">
 
-                      const minimumStock =
-                        Number(
-                          item.minimumStock ?? 0
+                      {visibleProducts.map((item) => {
+
+                        const totalQty = getQty(item);
+
+                        const minimumStock =
+                          Number(item.minimumStock ?? 0);
+
+                        const isLow =
+                          getIsLow(item);
+
+                        const unitLabel =
+                          item.unit || "Kg";
+
+                        return (
+                          <tr
+                            key={item.productId || item._id}
+                            className="hover:bg-slate-50/80 transition-colors"
+                          >
+
+                            {/* Product */}
+                            <td className="px-6 py-4">
+
+                              <div className="font-bold text-slate-900">
+                                {item.productName}
+                              </div>
+
+                              <div className="text-xs text-slate-400 mt-0.5">
+                                {item.productCode || "-"}
+                              </div>
+
+                            </td>
+
+                            {/* Category */}
+                            <td className="px-6 py-4">
+
+                              <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                                {item.category || "General"}
+                              </span>
+
+                            </td>
+
+                            {/* Unit */}
+                            <td className="px-6 py-4">
+
+                              <span className="font-medium text-slate-700">
+                                {unitLabel}
+                              </span>
+
+                            </td>
+
+                            {/* Current Stock */}
+                            <td className="px-6 py-4 text-right">
+
+                              <span
+                                className={`text-base font-bold ${
+                                  isLow
+                                    ? "text-amber-600"
+                                    : "text-[#1E3A8A]"
+                                }`}
+                              >
+                                {totalQty.toLocaleString()}
+                              </span>
+
+                              <span className="text-xs text-slate-400 ml-1">
+                                {unitLabel}
+                              </span>
+
+                            </td>
+
+                            {/* Minimum Stock */}
+                            <td className="px-6 py-4 text-right">
+
+                              <span className="font-medium text-slate-700">
+                                {minimumStock.toLocaleString()}
+                              </span>
+
+                              <span className="text-xs text-slate-400 ml-1">
+                                {unitLabel}
+                              </span>
+
+                            </td>
+
+                            {/* Status */}
+                            <td className="px-6 py-4 text-center">
+
+                              {isLow ? (
+
+                                <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 border border-amber-200">
+
+                                  <AlertTriangle size={12} />
+
+                                  Low Stock
+
+                                </span>
+
+                              ) : (
+
+                                <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
+
+                                  In Stock
+
+                                </span>
+
+                              )}
+
+                            </td>
+
+                          </tr>
                         );
+                      })}
 
-                      const isLow =
-                        getIsLow(item);
+                    </tbody>
 
-                      const unitLabel =
-                        item.unit || "Kg";
+                  </table>
 
-                      return (
-                        <tr
-                          key={item.productId || item._id}
-                          className="hover:bg-slate-50/80 transition-colors"
-                        >
+                </div>
 
-                          {/* Product */}
-                          <td className="px-6 py-4">
 
-                            <div className="font-bold text-slate-900">
+                {/* =================================================
+                    SMALL / MEDIUM SCREEN — CARDS
+                ================================================= */}
+
+                <div className="lg:hidden p-3 sm:p-4 space-y-3">
+
+                  {visibleProducts.map((item) => {
+
+                    const totalQty = getQty(item);
+
+                    const minimumStock =
+                      Number(item.minimumStock ?? 0);
+
+                    const isLow =
+                      getIsLow(item);
+
+                    const unitLabel =
+                      item.unit || "Kg";
+
+                    return (
+                      <div
+                        key={item.productId || item._id}
+                        className={`rounded-2xl border bg-white p-4 transition-all ${
+                          isLow
+                            ? "border-amber-200"
+                            : "border-slate-200"
+                        }`}
+                      >
+
+                        {/* Card Header */}
+                        <div className="flex items-start justify-between gap-3">
+
+                          <div className="min-w-0">
+
+                            <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate">
                               {item.productName}
-                            </div>
+                            </h3>
 
-                            <div className="text-xs text-slate-400 mt-0.5">
+                            <p className="text-xs text-slate-400 mt-0.5">
                               {item.productCode || "-"}
-                            </div>
+                            </p>
 
-                          </td>
-
-                          {/* Category */}
-                          <td className="px-6 py-4">
-
-                            <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                              {item.category || "General"}
-                            </span>
-
-                          </td>
-
-                          {/* Unit */}
-                          <td className="px-6 py-4">
-
-                            <span className="font-medium text-slate-700">
-                              {unitLabel}
-                            </span>
-
-                          </td>
-
-                          {/* Current Stock */}
-                          <td className="px-6 py-4 text-right">
-
-                            <span
-                              className={`text-base font-bold ${
-                                isLow
-                                  ? "text-amber-600"
-                                  : "text-[#1E3A8A]"
-                              }`}
-                            >
-                              {totalQty.toLocaleString()}
-                            </span>
-
-                            <span className="text-xs text-slate-400 ml-1">
-                              {unitLabel}
-                            </span>
-
-                          </td>
-
-                          {/* Minimum Stock */}
-                          <td className="px-6 py-4 text-right">
-
-                            <span className="font-medium text-slate-700">
-                              {minimumStock.toLocaleString()}
-                            </span>
-
-                            <span className="text-xs text-slate-400 ml-1">
-                              {unitLabel}
-                            </span>
-
-                          </td>
+                          </div>
 
                           {/* Status */}
-                          <td className="px-6 py-4 text-center">
+                          {isLow ? (
 
-                            {isLow ? (
+                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] sm:text-xs font-bold text-amber-700 border border-amber-200">
 
-                              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700 border border-amber-200">
+                              <AlertTriangle size={11} />
 
-                                <AlertTriangle size={12} />
+                              Low Stock
 
-                                Low Stock
+                            </span>
 
+                          ) : (
+
+                            <span className="shrink-0 inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] sm:text-xs font-bold text-emerald-700 border border-emerald-200">
+
+                              In Stock
+
+                            </span>
+
+                          )}
+
+                        </div>
+
+
+                        {/* Category */}
+                        <div className="mt-3">
+
+                          <span className="inline-flex items-center rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                            {item.category || "General"}
+                          </span>
+
+                        </div>
+
+
+                        {/* Stock Information */}
+                        <div className="grid grid-cols-2 gap-3 mt-4">
+
+                          {/* Current Stock */}
+                          <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
+
+                            <p className="text-[11px] font-medium text-slate-400 uppercase">
+                              Current Stock
+                            </p>
+
+                            <div className="mt-1 flex items-baseline gap-1">
+
+                              <span
+                                className={`text-lg font-bold ${
+                                  isLow
+                                    ? "text-amber-600"
+                                    : "text-[#1E3A8A]"
+                                }`}
+                              >
+                                {totalQty.toLocaleString()}
                               </span>
 
-                            ) : (
-
-                              <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 border border-emerald-200">
-
-                                In Stock
-
+                              <span className="text-xs text-slate-400">
+                                {unitLabel}
                               </span>
 
-                            )}
+                            </div>
 
-                          </td>
+                          </div>
 
-                        </tr>
-                      );
-                    })}
 
-                  </tbody>
-                </table>
+                          {/* Minimum Stock */}
+                          <div className="rounded-xl bg-slate-50 border border-slate-100 p-3">
 
-              </div>
+                            <p className="text-[11px] font-medium text-slate-400 uppercase">
+                              Minimum Stock
+                            </p>
+
+                            <div className="mt-1 flex items-baseline gap-1">
+
+                              <span className="text-lg font-bold text-slate-700">
+                                {minimumStock.toLocaleString()}
+                              </span>
+
+                              <span className="text-xs text-slate-400">
+                                {unitLabel}
+                              </span>
+
+                            </div>
+
+                          </div>
+
+                        </div>
+
+
+                        {/* Low Stock Warning */}
+                        {isLow && (
+                          <div className="mt-3 flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2">
+
+                            <AlertTriangle
+                              size={14}
+                              className="text-amber-600 shrink-0"
+                            />
+
+                            <p className="text-xs font-medium text-amber-700">
+                              Stock level is at or below the minimum required level.
+                            </p>
+
+                          </div>
+                        )}
+
+                      </div>
+                    );
+                  })}
+
+                </div>
+              </>
             )}
+
           </div>
 
         </main>
