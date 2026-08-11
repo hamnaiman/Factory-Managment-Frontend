@@ -3,6 +3,8 @@ import { X, Upload, Loader2, ExternalLink } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 
+import { uploadToCloudinary } from "../services/cloudinaryService";
+
 const CATEGORIES = [
   "Electricity",
   "Labour",
@@ -13,14 +15,14 @@ const CATEGORIES = [
   "Other",
 ];
 
-const defaultForm = {
+const getDefaultForm = () => ({
   title: "",
   category: "Other",
   amount: "",
   date: new Date().toISOString().split("T")[0],
   notes: "",
   billImage: "",
-};
+});
 
 function ExpenseModal({
   isOpen,
@@ -29,11 +31,17 @@ function ExpenseModal({
   initialData,
   isSaving,
 }) {
-  const [form, setForm] = useState(defaultForm);
+  const [form, setForm] = useState(getDefaultForm());
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
+  // ============================================================
+  // RESET / LOAD FORM
+  // ============================================================
+
   useEffect(() => {
+    if (!isOpen) return;
+
     if (initialData) {
       setForm({
         title: initialData.title || "",
@@ -46,17 +54,20 @@ function ExpenseModal({
         billImage: initialData.billImage || "",
       });
     } else {
-      setForm({
-        ...defaultForm,
-        date: new Date().toISOString().split("T")[0],
-      });
+      setForm(getDefaultForm());
     }
 
     setUploadingImage(false);
     setUploadProgress(0);
   }, [initialData, isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
+
+  // ============================================================
+  // FORM CHANGE
+  // ============================================================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -67,99 +78,64 @@ function ExpenseModal({
     }));
   };
 
-  const handleImageChange = async (e) => {
-    const file = e.target.files?.[0];
+  // ============================================================
+  // CLOUDINARY IMAGE UPLOAD
+  // ============================================================
 
-    // Reset file input value so same file can be selected again
-    e.target.value = "";
+ const handleImageChange = async (e) => {
+  const file = e.target.files?.[0];
 
-    if (!file) return;
+  // Allow same file to be selected again
+  e.target.value = "";
 
-    // Validate file type
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-    ];
+  if (!file) {
+    return;
+  }
 
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Please upload a JPG, PNG, or WEBP image.");
-      return;
-    }
+  setUploadingImage(true);
+  setUploadProgress(0);
 
-    // 10 MB maximum
-    const maxSize = 10 * 1024 * 1024;
-
-    if (file.size > maxSize) {
-      toast.error("Image size must be less than 10 MB.");
-      return;
-    }
-
-    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-
-    if (!cloudName || !uploadPreset) {
-      console.error("Cloudinary environment variables are missing:", {
-        cloudName: !!cloudName,
-        uploadPreset: !!uploadPreset,
-      });
-
-      toast.error("Cloudinary configuration is missing.");
-      return;
-    }
-
-    const formData = new FormData();
-
-    formData.append("file", file);
-    formData.append("upload_preset", uploadPreset);
-
-    // Optional folder organization
-    formData.append("folder", "factory_uploads/expenses");
-
-    setUploadingImage(true);
-    setUploadProgress(0);
-
-    try {
-      const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-
-      const response = await axios.post(uploadUrl, formData, {
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percent = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
-
-            setUploadProgress(percent);
-          }
-        },
-      });
-
-      const uploadedImageUrl = response.data?.secure_url;
-
-      if (!uploadedImageUrl) {
-        throw new Error("Cloudinary did not return an image URL.");
+  try {
+    const fileData = await uploadToCloudinary(
+      file,
+      (percent) => {
+        setUploadProgress(percent);
       }
+    );
 
-      setForm((prev) => ({
-        ...prev,
-        billImage: uploadedImageUrl,
-      }));
-
-      toast.success("Bill uploaded successfully.");
-    } catch (error) {
-      console.error("Cloudinary expense bill upload error:", error);
-
-      const cloudinaryMessage =
-        error.response?.data?.error?.message ||
-        error.message ||
-        "Failed to upload bill image.";
-
-      toast.error(cloudinaryMessage);
-    } finally {
-      setUploadingImage(false);
-      setUploadProgress(0);
+    if (!fileData?.url) {
+      throw new Error(
+        "Cloudinary did not return a secure image URL."
+      );
     }
-  };
+
+    setForm((prev) => ({
+      ...prev,
+      billImage: fileData.url,
+    }));
+
+    toast.success(
+      "Bill uploaded successfully."
+    );
+  } catch (error) {
+    console.error(
+      "Cloudinary expense bill upload error:",
+      error
+    );
+
+    toast.error(
+      error?.message ||
+        "Failed to upload bill image."
+    );
+  } finally {
+    setUploadingImage(false);
+    setUploadProgress(0);
+  }
+};
+
+  // ============================================================
+  // REMOVE BILL IMAGE
+  // ============================================================
 
   const removeBillImage = () => {
     setForm((prev) => ({
@@ -170,11 +146,17 @@ function ExpenseModal({
     toast.success("Bill image removed.");
   };
 
+  // ============================================================
+  // SUBMIT
+  // ============================================================
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (uploadingImage) {
-      toast.error("Please wait until the bill upload finishes.");
+      toast.error(
+        "Please wait until the bill upload finishes."
+      );
       return;
     }
 
@@ -183,7 +165,11 @@ function ExpenseModal({
       return;
     }
 
-    if (!form.amount || Number(form.amount) < 0) {
+    if (
+      form.amount === "" ||
+      form.amount === null ||
+      Number(form.amount) < 0
+    ) {
       toast.error("Please enter a valid amount.");
       return;
     }
@@ -194,20 +180,29 @@ function ExpenseModal({
     }
 
     const payload = {
-      ...form,
       title: form.title.trim(),
-      notes: form.notes.trim(),
+      category: form.category,
       amount: Number(form.amount),
+      date: form.date,
+      notes: form.notes.trim(),
       billImage: form.billImage || "",
     };
 
-    onSave(payload);
+    await onSave(payload);
   };
+
+  // ============================================================
+  // UI
+  // ============================================================
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-3 sm:p-5">
-      <div className="flex max-h-[95vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl">
-        {/* Header */}
+      <div className="flex max-h-[95vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:rounded-3xl">
+
+        {/* =====================================================
+            HEADER
+        ====================================================== */}
+
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
           <div className="min-w-0 pr-3">
             <h2 className="text-lg font-bold text-slate-900 sm:text-xl">
@@ -230,7 +225,10 @@ function ExpenseModal({
           </button>
         </div>
 
-        {/* Form */}
+        {/* =====================================================
+            FORM
+        ====================================================== */}
+
         <form
           onSubmit={handleSubmit}
           className="flex-1 overflow-y-auto"
@@ -272,7 +270,10 @@ function ExpenseModal({
                   className="w-full cursor-pointer rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-[#1E3A8A] focus:ring-1 focus:ring-[#1E3A8A] disabled:bg-slate-100"
                 >
                   {CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
+                    <option
+                      key={category}
+                      value={category}
+                    >
                       {category}
                     </option>
                   ))}
@@ -334,7 +335,10 @@ function ExpenseModal({
               />
             </div>
 
-            {/* Bill / Receipt */}
+            {/* =================================================
+                BILL / RECEIPT
+            ================================================== */}
+
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-slate-700">
                 Bill / Receipt
@@ -384,7 +388,7 @@ function ExpenseModal({
               ) : (
                 <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
 
-                  {/* Image */}
+                  {/* Image Preview */}
                   <div className="relative">
                     <img
                       src={form.billImage}
@@ -393,7 +397,7 @@ function ExpenseModal({
                     />
                   </div>
 
-                  {/* Image actions */}
+                  {/* Image Actions */}
                   <div className="flex flex-col gap-2 border-t border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
 
                     <div className="flex min-w-0 items-center gap-2">
@@ -403,6 +407,8 @@ function ExpenseModal({
                     </div>
 
                     <div className="flex items-center gap-2">
+
+                      {/* View */}
                       <a
                         href={form.billImage}
                         target="_blank"
@@ -413,6 +419,7 @@ function ExpenseModal({
                         View
                       </a>
 
+                      {/* Remove */}
                       <button
                         type="button"
                         onClick={removeBillImage}
@@ -426,13 +433,15 @@ function ExpenseModal({
                 </div>
               )}
 
-              {/* Upload progress */}
+              {/* Upload Progress */}
               {uploadingImage && (
                 <div className="mt-2">
                   <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
                     <div
                       className="h-full rounded-full bg-[#1E3A8A] transition-all duration-200"
-                      style={{ width: `${uploadProgress}%` }}
+                      style={{
+                        width: `${uploadProgress}%`,
+                      }}
                     />
                   </div>
                 </div>
@@ -440,8 +449,12 @@ function ExpenseModal({
             </div>
           </div>
 
-          {/* Buttons */}
+          {/* =================================================
+              BUTTONS
+          ================================================== */}
+
           <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
+
             <button
               type="button"
               onClick={onClose}
@@ -457,7 +470,10 @@ function ExpenseModal({
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1E3A8A] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#17307A] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               {(isSaving || uploadingImage) && (
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2
+                  size={16}
+                  className="animate-spin"
+                />
               )}
 
               {uploadingImage

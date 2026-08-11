@@ -313,60 +313,69 @@ const PurchaseModal = ({
   // FILE UPLOAD
   // =====================================================
 
-  const handleFileUpload = async (
-    event
-  ) => {
-    const file =
-      event.target.files?.[0];
+  const handleFileUpload = async (event) => {
+  const file = event.target.files?.[0];
 
-    if (!file) return;
+  // Allow selecting the same file again
+  event.target.value = "";
 
-    setUploadingBill(true);
-    setUploadProgress(0);
+  if (!file) {
+    return;
+  }
 
-    try {
-      const fileData =
-        await uploadToCloudinary(
-          file,
-          (percent) =>
-            setUploadProgress(percent)
-        );
+  setUploadingBill(true);
+  setUploadProgress(0);
 
-      setBill({
-        url:
-          fileData?.url ||
-          fileData?.secure_url ||
-          "",
+  try {
+    const fileData = await uploadToCloudinary(
+      file,
+      (percent) => {
+        setUploadProgress(percent);
+      }
+    );
 
-        fileName:
-          fileData?.original_filename ||
-          file.name,
-
-        fileType:
-          file.type ||
-          "application/pdf",
-      });
-
-      toast.success(
-        "Bill document attached successfully"
+    if (!fileData?.url) {
+      throw new Error(
+        "Cloudinary did not return a file URL."
       );
-    } catch (error) {
-      console.error(
-        "Cloudinary upload error:",
-        error
-      );
-
-      toast.error(
-        "Failed to upload bill attachment"
-      );
-    } finally {
-      setUploadingBill(false);
-      setUploadProgress(0);
-
-      // Allow selecting same file again
-      event.target.value = "";
     }
-  };
+
+    setBill({
+      url: fileData.url,
+
+      fileName:
+        fileData.fileName ||
+        file.name,
+
+      fileType:
+        fileData.fileType ||
+        file.type,
+
+      publicId:
+        fileData.publicId || "",
+
+      resourceType:
+        fileData.resourceType || "",
+    });
+
+    toast.success(
+      "Bill document attached successfully."
+    );
+  } catch (error) {
+    console.error(
+      "Purchase bill upload error:",
+      error
+    );
+
+    toast.error(
+      error?.message ||
+        "Failed to upload bill attachment."
+    );
+  } finally {
+    setUploadingBill(false);
+    setUploadProgress(0);
+  }
+};
 
   // =====================================================
   // VALIDATION
@@ -1121,7 +1130,7 @@ const PurchaseModal = ({
 
                       <input
                         type="file"
-                        accept="image/*,.pdf"
+                        accept="application/pdf,image/jpeg,image/png,image/webp"
                         onChange={
                           handleFileUpload
                         }
