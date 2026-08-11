@@ -1,8 +1,8 @@
 import {
-  Users,
   Package,
   Wallet,
   Banknote,
+  TrendingUp,
 } from "lucide-react";
 
 import StatCard from "./StatCard";
@@ -25,21 +25,29 @@ function StatsSection({ dashboard }) {
   };
 
   const stats = [
+    // ==========================================
+    // REVENUE
+    // ==========================================
     {
-      title: "Total Workers",
-      value: formatNumber(dashboard?.totalWorkers),
-      subtitle: `${formatNumber(
-        dashboard?.presentToday
-      )} Present Today`,
-      icon: Users,
+      title: "Revenue",
+      value: formatCurrency(
+        dashboard?.totalRevenue
+      ),
+      subtitle: "Total completed sales",
+      icon: TrendingUp,
       iconBg: "bg-blue-100",
       iconColor: "text-blue-700",
       border: "hover:border-blue-500",
     },
 
+    // ==========================================
+    // PRODUCTS
+    // ==========================================
     {
       title: "Products",
-      value: formatNumber(dashboard?.totalProducts),
+      value: formatNumber(
+        dashboard?.totalProducts
+      ),
       subtitle: "Inventory Items",
       icon: Package,
       iconBg: "bg-emerald-100",
@@ -47,6 +55,9 @@ function StatsSection({ dashboard }) {
       border: "hover:border-emerald-500",
     },
 
+    // ==========================================
+    // PENDING SALARY
+    // ==========================================
     {
       title: "Pending Salary",
       value: formatCurrency(
@@ -59,6 +70,9 @@ function StatsSection({ dashboard }) {
       border: "hover:border-orange-500",
     },
 
+    // ==========================================
+    // TODAY'S PAYMENTS
+    // ==========================================
     {
       title: "Today's Payments",
       value: formatCurrency(
@@ -73,7 +87,7 @@ function StatsSection({ dashboard }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((item) => (
         <StatCard
           key={item.title}

@@ -49,19 +49,25 @@ function Dashboard() {
 
   return (
     <div className="flex min-h-screen overflow-x-hidden bg-slate-100">
-      <Sidebar
+     <Sidebar
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
       />
 
       <div
-        className={`flex-1 min-w-0 transition-all duration-300 ${
-          isSidebarOpen ? "ml-0 lg:ml-72" : "ml-0 lg:ml-20"
+        className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen
+            ? "ml-0 lg:ml-72"
+            : "ml-0 lg:ml-20"
         }`}
       >
         <Navbar
-          isSidebarOpen={isSidebarOpen}
-          setIsOpen={setIsSidebarOpen}
+          isSidebarOpen={
+            isSidebarOpen
+          }
+          setIsSidebarOpen={
+            setIsSidebarOpen
+          }
         />
 
         <main className="mx-auto mt-24 max-w-[1600px] space-y-6 p-4 md:p-6 lg:p-8">
@@ -74,7 +80,7 @@ function Dashboard() {
           {/* Dashboard Layout */}
           <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
             {/* Left Side */}
-            <div className="space-y-6">
+            <div className="space-y-2">
               <LowStock dashboard={dashboard} />
 
               <RevenueChart dashboard={dashboard} />

@@ -1,276 +1,817 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import toast from 'react-hot-toast';
-import { Search } from 'lucide-react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 
-import Sidebar from '../components/Sidebar';
-import Navbar from '../components/Navbar';
-import VendorModal from '../components/VendorModal';
-import VendorHistoryModal from '../components/VendorHistoryModal';
-import { vendorService } from '../services/vendorService';
+import toast from "react-hot-toast";
+
+import {
+  Search,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+
+import Sidebar from "../components/Sidebar";
+import Navbar from "../components/Navbar";
+import VendorModal from "../components/VendorModal";
+import VendorHistoryModal from "../components/VendorHistoryModal";
+
+import { vendorService } from "../services/vendorService";
 
 const VendorPage = () => {
-  // Desktop standard fixed layout state - starts open by default
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  // =====================================================
+  // SIDEBAR
+  // =====================================================
 
-  const [vendors, setVendors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [includeInactive, setIncludeInactive] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] =
+    useState(true);
 
-  // Modals management
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedVendor, setSelectedVendor] = useState(null);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  // =====================================================
+  // VENDORS
+  // =====================================================
 
-  const fetchVendors = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await vendorService.getVendors(search, includeInactive);
-      if (res.success) {
-        setVendors(res.data || []);
+  const [vendors, setVendors] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [search, setSearch] =
+    useState("");
+
+  const [includeInactive, setIncludeInactive] =
+    useState(true);
+
+  // =====================================================
+  // MODALS
+  // =====================================================
+
+  const [isFormOpen, setIsFormOpen] =
+    useState(false);
+
+  const [selectedVendor, setSelectedVendor] =
+    useState(null);
+
+  const [isHistoryOpen, setIsHistoryOpen] =
+    useState(false);
+
+  // =====================================================
+  // FETCH VENDORS
+  // =====================================================
+
+  const fetchVendors = useCallback(
+    async () => {
+      setLoading(true);
+
+      try {
+        const res =
+          await vendorService.getVendors(
+            search,
+            includeInactive
+          );
+
+        if (res?.success) {
+          setVendors(
+            res?.data || []
+          );
+        } else {
+          setVendors([]);
+        }
+      } catch (error) {
+        console.error(
+          "Vendor fetch error:",
+          error
+        );
+
+        toast.error(
+          error?.response?.data?.message ||
+            "Failed to load vendors"
+        );
+
+        setVendors([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      const msg = error.response?.data?.message || 'Failed to load vendors';
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, includeInactive]);
+    },
+    [search, includeInactive]
+  );
+
+  // =====================================================
+  // SEARCH DEBOUNCE
+  // =====================================================
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchVendors();
-    }, 300); // 300ms debounce on search
-    return () => clearTimeout(timer);
+    const timer =
+      setTimeout(() => {
+        fetchVendors();
+      }, 300);
+
+    return () =>
+      clearTimeout(timer);
   }, [fetchVendors]);
 
-  // Toast confirmation action for deactivation
-  const handleDeactivatePrompt = (vendor) => {
-    toast((t) => (
-      <div className="flex flex-col gap-3">
-        <p className="text-xs font-medium text-slate-800">
-          Deactivate <strong>{vendor.name}</strong>? They will be hidden from new purchases.
-        </p>
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={() => toast.dismiss(t.id)}
-            className="px-3 py-1 text-xs rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={async () => {
-              toast.dismiss(t.id);
-              try {
-                const res = await vendorService.deactivateVendor(vendor._id);
-                if (res.success) {
-                  toast.success('Vendor deactivated successfully');
-                  fetchVendors();
-                }
-              } catch (error) {
-                const msg = error.response?.data?.message || 'Deactivation failed';
-                toast.error(msg);
-              }
-            }}
-            className="px-3 py-1 text-xs rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition"
-          >
-            Confirm
-          </button>
-        </div>
-      </div>
-    ), {
-      duration: 6000,
-      position: 'top-center'
-    });
+  // =====================================================
+  // NEW VENDOR
+  // =====================================================
+
+  const handleNewVendor = () => {
+    setSelectedVendor(null);
+    setIsFormOpen(true);
   };
 
-  const handleReactivate = async (vendor) => {
+  // =====================================================
+  // EDIT VENDOR
+  // =====================================================
+
+  const handleEdit = (vendor) => {
+    setSelectedVendor(vendor);
+    setIsFormOpen(true);
+  };
+
+  // =====================================================
+  // VIEW HISTORY
+  // =====================================================
+
+  const handleViewHistory = (
+    vendor
+  ) => {
+    setSelectedVendor(vendor);
+    setIsHistoryOpen(true);
+  };
+
+  // =====================================================
+  // DEACTIVATE VENDOR
+  // =====================================================
+
+  const handleDeactivatePrompt = (
+    vendor
+  ) => {
+    toast(
+      (t) => (
+        <div className="flex min-w-[280px] flex-col gap-3">
+
+          <p className="text-sm font-medium text-slate-800">
+            Deactivate{" "}
+            <span className="font-bold">
+              {vendor?.name}
+            </span>
+            ?
+          </p>
+
+          <p className="text-xs leading-5 text-slate-500">
+            This vendor will be hidden
+            from new purchases.
+          </p>
+
+          <div className="flex justify-end gap-2">
+
+            <button
+              type="button"
+              onClick={() =>
+                toast.dismiss(t.id)
+              }
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                toast.dismiss(t.id);
+
+                try {
+                  const res =
+                    await vendorService.deactivateVendor(
+                      vendor._id
+                    );
+
+                  if (res?.success) {
+                    toast.success(
+                      "Vendor deactivated successfully"
+                    );
+
+                    fetchVendors();
+                  }
+                } catch (error) {
+                  console.error(
+                    error
+                  );
+
+                  toast.error(
+                    error?.response?.data?.message ||
+                      "Deactivation failed"
+                  );
+                }
+              }}
+              className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-700"
+            >
+              Confirm
+            </button>
+
+          </div>
+
+        </div>
+      ),
+      {
+        duration: 6000,
+        position: "top-center",
+      }
+    );
+  };
+
+  // =====================================================
+  // REACTIVATE VENDOR
+  // =====================================================
+
+  const handleReactivate = async (
+    vendor
+  ) => {
     try {
-      const res = await vendorService.reactivateVendor(vendor._id);
-      if (res.success) {
-        toast.success('Vendor reactivated successfully');
+      const res =
+        await vendorService.reactivateVendor(
+          vendor._id
+        );
+
+      if (res?.success) {
+        toast.success(
+          "Vendor reactivated successfully"
+        );
+
         fetchVendors();
       }
     } catch (error) {
-      const msg = error.response?.data?.message || 'Reactivation failed';
-      toast.error(msg);
+      console.error(
+        error
+      );
+
+      toast.error(
+        error?.response?.data?.message ||
+          "Reactivation failed"
+      );
     }
   };
 
+  // =====================================================
+  // RENDER
+  // =====================================================
+
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-100 flex">
-      {/* Sidebar Component */}
+    <div className="flex min-h-screen overflow-x-hidden bg-slate-100">
+
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
+
       <Sidebar
         isOpen={isSidebarOpen}
-        setIsOpen={setIsSidebarOpen}
+        setIsOpen={
+          setIsSidebarOpen
+        }
       />
 
-      {/* Main Content Area */}
-      <div 
-        className={`flex-1 min-w-0 transition-all duration-300 ease-in-out
-        ${isSidebarOpen ? "ml-0 lg:ml-72" : "ml-0 lg:ml-20"}`}
+      {/* =================================================
+          MAIN CONTENT
+      ================================================= */}
+
+      <div
+        className={`min-w-0 flex-1 transition-all duration-300 ease-in-out ${
+          isSidebarOpen
+            ? "ml-0 lg:ml-72"
+            : "ml-0 lg:ml-20"
+        }`}
       >
-        {/* Fixed Navbar */}
+
+        {/* =================================================
+            NAVBAR
+        ================================================= */}
+
         <Navbar
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
+          isSidebarOpen={
+            isSidebarOpen
+          }
+          setIsSidebarOpen={
+            setIsSidebarOpen
+          }
         />
 
-        {/* Page Content */}
-        <main className="p-4 md:p-6 lg:p-8 space-y-6 max-w-[1600px] mx-auto mt-24">
-          
-          {/* Header section */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* =================================================
+            PAGE
+        ================================================= */}
+
+        <main className="mx-auto mt-24 w-full max-w-[1600px] space-y-6 p-4 sm:p-5 md:p-6 lg:p-8">
+
+          {/* =================================================
+              HEADER
+          ================================================= */}
+
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
             <div>
+
               <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
                 Vendor Management
               </h1>
+
               <p className="mt-1 text-sm text-slate-500">
-                Manage raw material suppliers and purchase records
+                Manage raw material
+                suppliers and purchase
+                records
               </p>
+
             </div>
+
             <button
-              onClick={() => {
-                setSelectedVendor(null);
-                setIsFormOpen(true);
-              }}
-              className="h-12 rounded-2xl bg-[#1E3A8A] px-6 font-semibold text-white transition hover:bg-[#17307A] cursor-pointer shadow-xs"
+              type="button"
+              onClick={
+                handleNewVendor
+              }
+              className="h-12 w-full rounded-2xl bg-[#1E3A8A] px-6 font-semibold text-white shadow-sm transition hover:bg-[#17307A] sm:w-auto"
             >
               + New Vendor
             </button>
+
           </div>
 
-          {/* Control Bar / Search Toolbar */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
+          {/* =================================================
+              SEARCH / FILTER
+          ================================================= */}
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              
-              {/* Search */}
-              <div className="relative w-full md:max-w-md lg:max-w-sm">
+
+              {/* SEARCH */}
+
+              <div className="relative w-full md:max-w-md">
+
                 <Search
                   size={18}
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                 />
+
                 <input
                   type="text"
                   placeholder="Search name, company, phone..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-slate-300 pl-11 pr-4 text-sm outline-hidden transition focus:border-[#1E3A8A]"
+                  onChange={(e) =>
+                    setSearch(
+                      e.target.value
+                    )
+                  }
+                  className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#1E3A8A] focus:ring-2 focus:ring-blue-100"
                 />
+
               </div>
 
-              {/* Inactive Toggle */}
-              <label className="flex items-center space-x-2 text-sm text-slate-600 cursor-pointer">
+              {/* INACTIVE */}
+
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+
                 <input
                   type="checkbox"
-                  checked={includeInactive}
-                  onChange={(e) => setIncludeInactive(e.target.checked)}
-                  className="rounded text-[#1E3A8A] focus:ring-[#1E3A8A] h-4 w-4"
+                  checked={
+                    includeInactive
+                  }
+                  onChange={(e) =>
+                    setIncludeInactive(
+                      e.target.checked
+                    )
+                  }
+                  className="h-4 w-4 rounded border-slate-300 text-[#1E3A8A] focus:ring-[#1E3A8A]"
                 />
-                <span>Show inactive vendors</span>
+
+                <span>
+                  Show inactive
+                  vendors
+                </span>
+
               </label>
+
             </div>
+
           </div>
 
-          {/* Table Container */}
-          <div className="w-full overflow-x-auto bg-white rounded-3xl border border-slate-200 shadow-xs">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  <th className="py-4 px-6">Name</th>
-                  <th className="py-4 px-6">Company</th>
-                  <th className="py-4 px-6">Phone</th>
-                  <th className="py-4 px-6">Status</th>
-                  <th className="py-4 px-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                {loading ? (
-                  <tr>
-                    <td colSpan="5" className="text-center py-8 text-slate-400">
-                      Loading vendors...
-                    </td>
-                  </tr>
-                ) : vendors.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="text-center py-8 text-slate-400">
-                      No vendors found.
-                    </td>
-                  </tr>
-                ) : (
-                  vendors.map((v) => (
-                    <tr key={v._id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-4 px-6 font-semibold text-slate-800">{v.name}</td>
-                      <td className="py-4 px-6">{v.companyName || '—'}</td>
-                      <td className="py-4 px-6">{v.phone || '—'}</td>
-                      <td className="py-4 px-6">
-                        {v.isActive ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 border border-slate-200">
-                            Inactive
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-4 px-6 text-right space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedVendor(v);
-                            setIsHistoryOpen(true);
-                          }}
-                          className="text-[#1E3A8A] hover:underline text-xs font-semibold"
+          {/* =================================================
+              VENDOR LIST
+          ================================================= */}
+
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+
+            {/* =================================================
+                DESKTOP
+            ================================================= */}
+
+            <div className="hidden lg:block">
+
+              {/* HEADER */}
+
+              <div className="grid grid-cols-12 bg-slate-50 px-6 py-4 font-semibold text-slate-700">
+
+                <div className="col-span-3">
+                  Name
+                </div>
+
+                <div className="col-span-2">
+                  Company
+                </div>
+
+                <div className="col-span-2">
+                  Phone
+                </div>
+
+                <div className="col-span-2">
+                  Status
+                </div>
+
+                <div className="col-span-3 text-center">
+                  Actions
+                </div>
+
+              </div>
+
+              {/* LOADING */}
+
+              {loading ? (
+
+                <div className="px-6 py-12 text-center text-sm text-slate-400">
+                  Loading vendors...
+                </div>
+
+              ) : vendors.length ===
+                0 ? (
+
+                <div className="px-6 py-12 text-center text-sm text-slate-400">
+                  No vendors found.
+                </div>
+
+              ) : (
+
+                vendors.map(
+                  (vendor) => (
+
+                    <div
+                      key={
+                        vendor._id
+                      }
+                      className="grid grid-cols-12 items-center border-t border-slate-100 px-6 py-5 transition hover:bg-slate-50"
+                    >
+
+                      {/* NAME */}
+
+                      <div className="col-span-3">
+
+                        <p className="font-semibold text-[#1E3A8A]">
+                          {
+                            vendor.name
+                          }
+                        </p>
+
+                      </div>
+
+                      {/* COMPANY */}
+
+                      <div className="col-span-2 text-slate-700">
+
+                        {
+                          vendor.companyName ||
+                          "—"
+                        }
+
+                      </div>
+
+                      {/* PHONE */}
+
+                      <div className="col-span-2 text-slate-700">
+
+                        {
+                          vendor.phone ||
+                          "—"
+                        }
+
+                      </div>
+
+                      {/* STATUS */}
+
+                      <div className="col-span-2">
+
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-medium ${
+                            vendor.isActive
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
                         >
-                          View History
-                        </button>
+                          {vendor.isActive
+                            ? "active"
+                            : "inactive"}
+                        </span>
+
+                      </div>
+
+                      {/* ACTIONS */}
+
+                      <div className="col-span-3 flex justify-center gap-3">
+
+                        {/* HISTORY */}
+
                         <button
-                          onClick={() => {
-                            setSelectedVendor(v);
-                            setIsFormOpen(true);
-                          }}
-                          className="text-slate-600 hover:text-slate-900 text-xs font-semibold"
+                          type="button"
+                          onClick={() =>
+                            handleViewHistory(
+                              vendor
+                            )
+                          }
+                          className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-[#1E3A8A] transition hover:bg-slate-200"
                         >
-                          Edit
+                          History
                         </button>
-                        {v.isActive ? (
+
+                        {/* EDIT */}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleEdit(
+                              vendor
+                            )
+                          }
+                          className="rounded-xl bg-blue-50 p-2 text-blue-600 transition hover:bg-blue-100"
+                        >
+                          <Pencil
+                            size={18}
+                          />
+                        </button>
+
+                        {/* DELETE */}
+
+                        {vendor.isActive ? (
+
                           <button
-                            onClick={() => handleDeactivatePrompt(v)}
-                            className="text-red-600 hover:underline text-xs font-semibold"
+                            type="button"
+                            onClick={() =>
+                              handleDeactivatePrompt(
+                                vendor
+                              )
+                            }
+                            className="rounded-xl bg-red-50 p-2 text-red-600 transition hover:bg-red-100"
                           >
-                            Deactivate
+                            <Trash2
+                              size={18}
+                            />
                           </button>
+
                         ) : (
+
                           <button
-                            onClick={() => handleReactivate(v)}
-                            className="text-emerald-600 hover:underline text-xs font-semibold"
+                            type="button"
+                            onClick={() =>
+                              handleReactivate(
+                                vendor
+                              )
+                            }
+                            className="rounded-xl bg-green-50 px-3 py-2 text-xs font-semibold text-green-600 transition hover:bg-green-100"
                           >
                             Reactivate
                           </button>
+
                         )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+
+                      </div>
+
+                    </div>
+
+                  )
+                )
+
+              )}
+
+            </div>
+
+            {/* =================================================
+                MOBILE
+            ================================================= */}
+
+            <div className="grid gap-4 p-4 lg:hidden">
+
+              {loading ? (
+
+                <div className="py-10 text-center text-sm text-slate-400">
+                  Loading vendors...
+                </div>
+
+              ) : vendors.length ===
+                0 ? (
+
+                <div className="py-10 text-center text-sm text-slate-400">
+                  No vendors found.
+                </div>
+
+              ) : (
+
+                vendors.map(
+                  (vendor) => (
+
+                    <div
+                      key={
+                        vendor._id
+                      }
+                      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                    >
+
+                      {/* CARD HEADER */}
+
+                      <div className="flex items-start justify-between gap-3">
+
+                        <div>
+
+                          <p className="text-lg font-bold text-[#1E3A8A]">
+                            {
+                              vendor.name
+                            }
+                          </p>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            {
+                              vendor.companyName ||
+                              "—"
+                            }
+                          </p>
+
+                        </div>
+
+                        <span
+                          className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
+                            vendor.isActive
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {vendor.isActive
+                            ? "active"
+                            : "inactive"}
+                        </span>
+
+                      </div>
+
+                      {/* DETAILS */}
+
+                      <div className="mt-5 space-y-2 text-sm">
+
+                        <div className="flex justify-between gap-4">
+
+                          <span className="text-slate-500">
+                            Phone
+                          </span>
+
+                          <span className="text-right font-medium text-slate-700">
+                            {
+                              vendor.phone ||
+                              "—"
+                            }
+                          </span>
+
+                        </div>
+
+                        <div className="flex justify-between gap-4">
+
+                          <span className="text-slate-500">
+                            Company
+                          </span>
+
+                          <span className="text-right font-medium text-slate-700">
+                            {
+                              vendor.companyName ||
+                              "—"
+                            }
+                          </span>
+
+                        </div>
+
+                      </div>
+
+                      {/* ACTIONS */}
+
+                      <div className="mt-6 flex gap-3">
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleViewHistory(
+                              vendor
+                            )
+                          }
+                          className="flex-1 rounded-xl bg-slate-100 py-2 text-sm font-semibold text-[#1E3A8A] transition hover:bg-slate-200"
+                        >
+                          History
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleEdit(
+                              vendor
+                            )
+                          }
+                          className="flex-1 rounded-xl bg-blue-600 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                        >
+                          Edit
+                        </button>
+
+                        {vendor.isActive ? (
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleDeactivatePrompt(
+                                vendor
+                              )
+                            }
+                            className="flex-1 rounded-xl bg-red-600 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+                          >
+                            Delete
+                          </button>
+
+                        ) : (
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleReactivate(
+                                vendor
+                              )
+                            }
+                            className="flex-1 rounded-xl bg-green-600 py-2 text-sm font-semibold text-white transition hover:bg-green-700"
+                          >
+                            Reactivate
+                          </button>
+
+                        )}
+
+                      </div>
+
+                    </div>
+
+                  )
+                )
+
+              )}
+
+            </div>
+
           </div>
 
-          {/* Modals */}
+          {/* =================================================
+              VENDOR MODAL
+          ================================================= */}
+
           <VendorModal
             isOpen={isFormOpen}
-            onClose={() => setIsFormOpen(false)}
-            vendor={selectedVendor}
-            onSuccess={fetchVendors}
+            onClose={() => {
+              setIsFormOpen(false);
+              setSelectedVendor(null);
+            }}
+            vendor={
+              selectedVendor
+            }
+            onSuccess={() => {
+              fetchVendors();
+
+              setIsFormOpen(false);
+
+              setSelectedVendor(
+                null
+              );
+            }}
           />
 
+          {/* =================================================
+              HISTORY MODAL
+          ================================================= */}
+
           <VendorHistoryModal
-            isOpen={isHistoryOpen}
-            onClose={() => setIsHistoryOpen(false)}
-            vendor={selectedVendor}
+            isOpen={
+              isHistoryOpen
+            }
+            onClose={() => {
+              setIsHistoryOpen(
+                false
+              );
+
+              setSelectedVendor(
+                null
+              );
+            }}
+            vendor={
+              selectedVendor
+            }
           />
+
         </main>
+
       </div>
+
     </div>
   );
 };

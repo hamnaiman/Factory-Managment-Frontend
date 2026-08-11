@@ -10,7 +10,6 @@ function ClientModal({
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
-    email: "",
     address: "",
     status: "active",
   });
@@ -18,9 +17,8 @@ function ClientModal({
   useEffect(() => {
     if (initialData) {
       setFormData({
-        name: initialData.name || "",
-        phone: initialData.phone || "",
-        email: initialData.email || "",
+        name: initialData.clientName || "",
+        phone: initialData.phoneNumber || "",
         address: initialData.address || "",
         status: initialData.status || "active",
       });
@@ -28,7 +26,6 @@ function ClientModal({
       setFormData({
         name: "",
         phone: "",
-        email: "",
         address: "",
         status: "active",
       });
@@ -48,7 +45,6 @@ function ClientModal({
     onSubmit({
       clientName: formData.name,
       phoneNumber: formData.phone,
-      email: formData.email,
       address: formData.address,
       status: formData.status,
     });
@@ -58,14 +54,12 @@ function ClientModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 sm:p-4">
-
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl sm:rounded-3xl bg-white shadow-xl">
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl sm:rounded-3xl">
 
         {/* Header */}
         <div className="flex items-start justify-between border-b border-slate-200 px-4 py-4 sm:px-6 sm:py-5">
-
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+            <h2 className="text-lg font-bold text-slate-900 sm:text-xl">
               {initialData ? "Edit Client" : "Add Client"}
             </h2>
 
@@ -75,12 +69,12 @@ function ClientModal({
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             className="rounded-xl p-2 transition hover:bg-slate-100"
           >
             <X size={20} />
           </button>
-
         </div>
 
         {/* Form */}
@@ -88,7 +82,6 @@ function ClientModal({
           onSubmit={handleSubmit}
           className="space-y-5 p-4 sm:p-6"
         >
-
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
 
             {/* Client Name */}
@@ -103,7 +96,7 @@ function ClientModal({
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm sm:text-base outline-none transition focus:border-[#1E3A8A]"
+                className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-[#1E3A8A] sm:text-base"
               />
             </div>
 
@@ -119,22 +112,7 @@ function ClientModal({
                 value={formData.phone}
                 onChange={handleChange}
                 required
-                className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm sm:text-base outline-none transition focus:border-[#1E3A8A]"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">
-                Email
-              </label>
-
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm sm:text-base outline-none transition focus:border-[#1E3A8A]"
+                className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-[#1E3A8A] sm:text-base"
               />
             </div>
 
@@ -148,7 +126,7 @@ function ClientModal({
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm sm:text-base outline-none transition focus:border-[#1E3A8A]"
+                className="h-12 w-full rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-[#1E3A8A] sm:text-base"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -168,7 +146,7 @@ function ClientModal({
               name="address"
               value={formData.address}
               onChange={handleChange}
-              className="w-full resize-none rounded-xl border border-slate-300 p-4 text-sm sm:text-base outline-none transition focus:border-[#1E3A8A]"
+              className="w-full resize-none rounded-xl border border-slate-300 p-4 text-sm outline-none transition focus:border-[#1E3A8A] sm:text-base"
             />
           </div>
 
@@ -178,24 +156,21 @@ function ClientModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto rounded-xl border border-slate-300 px-6 py-3 font-medium transition hover:bg-slate-100"
+              className="w-full rounded-xl border border-slate-300 px-6 py-3 font-medium transition hover:bg-slate-100 sm:w-auto"
             >
               Cancel
             </button>
 
             <button
               type="submit"
-              className="w-full sm:w-auto rounded-xl bg-[#1E3A8A] px-6 py-3 font-medium text-white transition hover:bg-[#17307A]"
+              className="w-full rounded-xl bg-[#1E3A8A] px-6 py-3 font-medium text-white transition hover:bg-[#17307A] sm:w-auto"
             >
               {initialData ? "Update Client" : "Add Client"}
             </button>
 
           </div>
-
         </form>
-
       </div>
-
     </div>
   );
 }

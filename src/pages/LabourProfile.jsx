@@ -66,20 +66,26 @@ function LabourProfile() {
   return (
     <div className="min-h-screen bg-slate-100 overflow-x-hidden">
 
-      <Sidebar
+     <Sidebar
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
       />
 
       <div
-        className={`transition-all duration-300 ${
-          isSidebarOpen ? "lg:ml-72" : "lg:ml-20"
+        className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen
+            ? "ml-0 lg:ml-72"
+            : "ml-0 lg:ml-20"
         }`}
       >
 
-        <Navbar
-          isSidebarOpen={isSidebarOpen}
-          setIsOpen={setIsSidebarOpen}
+         <Navbar
+          isSidebarOpen={
+            isSidebarOpen
+          }
+          setIsSidebarOpen={
+            setIsSidebarOpen
+          }
         />
 
         <main className="mt-20 sm:mt-24 mx-auto w-full max-w-7xl space-y-6 p-3 sm:p-5 lg:p-8">

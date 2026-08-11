@@ -79,13 +79,6 @@ function Attendance() {
     useState(getTodayDate());
 
   // ===================================================
-  // ATTENDANCE SAVED
-  // ===================================================
-
-  const [attendanceSaved, setAttendanceSaved] =
-    useState(false);
-
-  // ===================================================
   // PAYMENTS
   // ===================================================
 
@@ -120,17 +113,23 @@ function Attendance() {
 
   const loadWorkers = async () => {
     try {
-      const response =
-        await getLabours();
+      const response = await getLabours();
+
+      const workerData =
+        response?.data?.data;
 
       setWorkers(
-        response?.data?.data || []
+        Array.isArray(workerData)
+          ? workerData
+          : []
       );
     } catch (error) {
       console.error(
         "Worker load error:",
         error
       );
+
+      setWorkers([]);
 
       toast.error(
         "Failed to load workers"
@@ -148,7 +147,6 @@ function Attendance() {
     try {
       if (!date) {
         setAttendance([]);
-        setAttendanceSaved(false);
         return;
       }
 
@@ -156,43 +154,41 @@ function Attendance() {
         await getAttendanceByDate(date);
 
       const records =
-        response?.data?.data || [];
+        response?.data?.data;
+
+      const safeRecords =
+        Array.isArray(records)
+          ? records
+          : [];
 
       const formattedAttendance =
-        records
+        safeRecords
           .map((item) => {
             const workerId =
-              item.worker?._id ||
-              item.worker;
+              item?.worker?._id ||
+              item?.worker;
 
             if (!workerId) {
               return null;
             }
 
             return {
-              worker: workerId,
-              status: item.status,
+              worker: String(workerId),
+              status: String(
+                item?.status || ""
+              ).toLowerCase(),
+              date,
             };
           })
-          .filter(Boolean);
+          .filter(
+            (item) =>
+              item &&
+              item.worker &&
+              item.status
+          );
 
       setAttendance(
         formattedAttendance
-      );
-
-      /*
-       * If all workers have attendance
-       * for this selected date,
-       * disable Save button.
-       *
-       * If only some workers are saved,
-       * remaining workers can still be added.
-       */
-
-      setAttendanceSaved(
-        workers.length > 0 &&
-        formattedAttendance.length >=
-          workers.length
       );
     } catch (error) {
       console.error(
@@ -202,7 +198,9 @@ function Attendance() {
 
       setAttendance([]);
 
-      setAttendanceSaved(false);
+      toast.error(
+        "Failed to load attendance"
+      );
     }
   };
 
@@ -248,7 +246,10 @@ function Attendance() {
     workerId,
     status
   ) => {
+    // -----------------------------------------------
     // Future date protection
+    // -----------------------------------------------
+
     if (isFutureDate) {
       toast.error(
         "Future date ki attendance add nahi kar sakte."
@@ -257,41 +258,81 @@ function Attendance() {
       return;
     }
 
-    /*
-     * Check if this worker already has
-     * attendance saved for selected date.
-     */
-
-    const alreadySaved =
-      attendance.some(
-        (item) =>
-          item.worker === workerId
-      );
-
-    if (alreadySaved) {
-      toast.error(
-        "Attendance is already saved for this worker on this date."
-      );
-
+    if (!workerId || !status) {
       return;
     }
 
-    setAttendance((prev) => {
-      const filtered =
-        prev.filter(
-          (item) =>
-            item.worker !== workerId
-        );
+    const normalizedWorkerId =
+      String(workerId);
 
-      if (!status) {
-        return filtered;
+    const normalizedStatus =
+      String(status)
+        .toLowerCase()
+        .trim();
+
+    // -----------------------------------------------
+    // UPDATE EXISTING OR ADD NEW
+    //
+    // IMPORTANT:
+    // Existing attendance ko block NAHI karna.
+    //
+    // Present -> Absent
+    // Present -> Leave
+    // Absent -> Present
+    // Leave -> Present
+    //
+    // Same worker/date ka sirf ONE record rahega.
+    // -----------------------------------------------
+
+    setAttendance((prev) => {
+      const existingIndex =
+        prev.findIndex((item) => {
+          return (
+            String(item?.worker) ===
+            normalizedWorkerId
+          );
+        });
+
+      // ---------------------------------------------
+      // EXISTING ATTENDANCE
+      // ---------------------------------------------
+
+      if (existingIndex !== -1) {
+        return prev.map(
+          (item, index) => {
+            if (
+              index !==
+              existingIndex
+            ) {
+              return item;
+            }
+
+            return {
+              ...item,
+              worker:
+                normalizedWorkerId,
+              status:
+                normalizedStatus,
+              date:
+                selectedDate,
+            };
+          }
+        );
       }
 
+      // ---------------------------------------------
+      // NEW ATTENDANCE
+      // ---------------------------------------------
+
       return [
-        ...filtered,
+        ...prev,
         {
-          worker: workerId,
-          status,
+          worker:
+            normalizedWorkerId,
+          status:
+            normalizedStatus,
+          date:
+            selectedDate,
         },
       ];
     });
@@ -309,14 +350,14 @@ function Attendance() {
   };
 
   // ===================================================
-  // SAVE ATTENDANCE
+  // SAVE / UPDATE ATTENDANCE
   // ===================================================
 
   const handleSaveAttendance =
     async () => {
       try {
         // ---------------------------------------------
-        // Date validation
+        // DATE VALIDATION
         // ---------------------------------------------
 
         if (!selectedDate) {
@@ -328,7 +369,7 @@ function Attendance() {
         }
 
         // ---------------------------------------------
-        // Future date protection
+        // FUTURE DATE
         // ---------------------------------------------
 
         if (selectedDate > today) {
@@ -340,10 +381,15 @@ function Attendance() {
         }
 
         // ---------------------------------------------
-        // No attendance selected
+        // NO ATTENDANCE
         // ---------------------------------------------
 
-        if (attendance.length === 0) {
+        if (
+          !Array.isArray(
+            attendance
+          ) ||
+          attendance.length === 0
+        ) {
           toast.error(
             "Please mark attendance first."
           );
@@ -352,77 +398,63 @@ function Attendance() {
         }
 
         // ---------------------------------------------
-        // Get existing attendance for EXACT date
+        // BUILD PAYLOAD
+        //
+        // IMPORTANT:
+        // Existing records bhi send honge.
+        //
+        // Backend:
+        // Existing -> UPDATE
+        // New -> CREATE
+        //
+        // Duplicate create nahi hoga.
         // ---------------------------------------------
 
-        const response =
-          await getAttendanceByDate(
-            selectedDate
-          );
-
-        const existingRecords =
-          response?.data?.data || [];
-
-        // ---------------------------------------------
-        // Existing worker IDs
-        // ---------------------------------------------
-
-        const alreadyMarked =
-          new Set(
-            existingRecords
-              .map(
-                (item) =>
-                  item.worker?._id ||
-                  item.worker
-              )
-              .filter(Boolean)
-          );
-
-        // ---------------------------------------------
-        // Only new attendance
-        // ---------------------------------------------
-
-        const newAttendance =
+        const payload =
           attendance
             .filter(
               (item) =>
-                !alreadyMarked.has(
-                  item.worker
-                )
+                item?.worker &&
+                item?.status
             )
             .map((item) => ({
-              worker: item.worker,
-              status: item.status,
+              worker:
+                typeof item.worker ===
+                "object"
+                  ? item.worker._id
+                  : item.worker,
 
-              // VERY IMPORTANT:
-              // selected date is sent
-              date: selectedDate,
+              status:
+                String(
+                  item.status
+                )
+                  .toLowerCase()
+                  .trim(),
+
+              date:
+                selectedDate,
             }));
 
         // ---------------------------------------------
-        // Nothing new to save
+        // VALID PAYLOAD CHECK
         // ---------------------------------------------
 
         if (
-          newAttendance.length === 0
+          payload.length === 0
         ) {
           toast.error(
-            "Attendance is already saved for the selected workers and date."
-          );
-
-          await loadAttendanceByDate(
-            selectedDate
+            "Please mark attendance first."
           );
 
           return;
         }
 
         // ---------------------------------------------
-        // SAVE
+        // SAVE / UPDATE
         // ---------------------------------------------
 
         await markAttendance(
-          newAttendance
+          payload
         );
 
         toast.success(
@@ -430,7 +462,7 @@ function Attendance() {
         );
 
         // ---------------------------------------------
-        // Reload selected date
+        // RELOAD FROM DATABASE
         // ---------------------------------------------
 
         await loadAttendanceByDate(
@@ -443,7 +475,9 @@ function Attendance() {
         );
 
         toast.error(
-          error?.response?.data?.message ||
+          error?.response?.data
+            ?.message ||
+            error?.message ||
             "Failed to save attendance."
         );
       }
@@ -459,7 +493,14 @@ function Attendance() {
     const date =
       e.target.value;
 
-    // Future date protection
+    if (!date) {
+      return;
+    }
+
+    // -----------------------------------------------
+    // FUTURE DATE PROTECTION
+    // -----------------------------------------------
+
     if (date > today) {
       toast.error(
         "Future date ki attendance add nahi kar sakte."
@@ -476,7 +517,7 @@ function Attendance() {
   // ===================================================
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="flex min-h-screen bg-slate-50">
 
       {/* =================================================
           SIDEBAR
@@ -530,7 +571,7 @@ function Attendance() {
             <p className="mt-1 text-sm text-slate-500">
               {isToday
                 ? "Mark today's workers attendance."
-                : "Add or view attendance for the selected date."}
+                : "Add or update attendance for the selected date."}
             </p>
           </div>
 
@@ -582,7 +623,9 @@ function Attendance() {
 
                 <input
                   type="date"
-                  value={selectedDate}
+                  value={
+                    selectedDate
+                  }
                   max={today}
                   onChange={
                     handleDateChange
@@ -638,12 +681,17 @@ function Attendance() {
               onClick={
                 handleSaveAttendance
               }
+
+              // IMPORTANT:
+              // Existing attendance hone par
+              // button DISABLE nahi hoga.
+              //
+              // Sirf future date disabled.
               disabled={
-                attendanceSaved ||
                 isFutureDate
               }
+
               className={`h-12 w-full rounded-2xl px-8 font-semibold text-white transition sm:w-auto ${
-                attendanceSaved ||
                 isFutureDate
                   ? "cursor-not-allowed bg-slate-400"
                   : "cursor-pointer bg-[#1E3A8A] hover:bg-[#17307A]"
@@ -651,27 +699,27 @@ function Attendance() {
             >
               {isFutureDate
                 ? "Future Date Not Allowed"
-                : attendanceSaved
-                ? "Attendance Already Saved"
-                : "Save Attendance"}
+                : "Save / Update Attendance"}
             </button>
 
           </div>
 
           {/* =================================================
-              TODAY'S SUMMARY ONLY
+              TODAY'S SUMMARY
           ================================================= */}
 
           {isToday && (
             <div className="mt-8">
 
               <AttendanceSummary
-                workers={workers}
+                workers={
+                  workers
+                }
                 attendance={
                   attendance
                 }
-                payments={
-                  payments
+                attendanceDate={
+                  selectedDate
                 }
               />
 
@@ -701,15 +749,38 @@ function Attendance() {
               data
             ) => {
               try {
+                if (
+                  !selectedWorker?._id
+                ) {
+                  toast.error(
+                    "Worker not selected."
+                  );
+
+                  return;
+                }
+
+                if (
+                  !selectedDate
+                ) {
+                  toast.error(
+                    "Attendance date not selected."
+                  );
+
+                  return;
+                }
 
                 await addPayment({
                   ...data,
+
                   worker:
-                    selectedWorker?._id,
+                    selectedWorker._id,
+
+                  paymentDate:
+                    selectedDate,
                 });
 
                 toast.success(
-                  "Payment added successfully"
+                  `Payment added for ${selectedDate}`
                 );
 
                 setOpenPaymentModal(
@@ -719,10 +790,9 @@ function Attendance() {
                 setSelectedWorker(
                   null
                 );
-
               } catch (error) {
-
                 console.error(
+                  "Payment error:",
                   error
                 );
 
@@ -730,6 +800,7 @@ function Attendance() {
                   error?.response
                     ?.data
                     ?.message ||
+                    error?.message ||
                     "Payment failed"
                 );
               }
@@ -740,12 +811,19 @@ function Attendance() {
                 ? {
                     worker:
                       selectedWorker,
+
                     amount: "",
+
                     paymentType:
                       "Salary",
+
                     paymentMethod:
                       "Cash",
+
                     remark: "",
+
+                    paymentDate:
+                      selectedDate,
                   }
                 : null
             }

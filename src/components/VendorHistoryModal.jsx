@@ -1,5 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { X, Loader2, Building2, Phone, Mail, MapPin } from "lucide-react";
+import {
+  X,
+  Loader2,
+  Building2,
+  Phone,
+  MapPin,
+  Package,
+  CalendarDays,
+  Receipt,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { vendorService } from "../services/vendorService";
 import toast from "react-hot-toast";
 
@@ -13,10 +24,12 @@ const VendorHistoryModal = ({
     purchaseCount: 0,
   });
 
+  const [purchases, setPurchases] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [expandedPurchase, setExpandedPurchase] = useState(null);
 
   // ======================================================
-  // FETCH VENDOR PURCHASE SUMMARY
+  // FETCH VENDOR PURCHASE HISTORY + SUMMARY
   // ======================================================
 
   useEffect(() => {
@@ -24,18 +37,19 @@ const VendorHistoryModal = ({
       return;
     }
 
-    const fetchSummary = async () => {
+    const fetchVendorHistory = async () => {
       setLoading(true);
 
       try {
-        const res =
+        // Summary
+        const summaryResponse =
           await vendorService.getVendorPurchaseSummary(
             vendor._id
           );
 
-        if (res?.success) {
+        if (summaryResponse?.success) {
           setSummary(
-            res.data || {
+            summaryResponse.data || {
               totalPurchases: 0,
               purchaseCount: 0,
             }
@@ -46,15 +60,28 @@ const VendorHistoryModal = ({
             purchaseCount: 0,
           });
         }
+
+        // Detailed purchase history
+        const purchaseResponse = await vendorService.getPurchasesByVendor(
+          vendor._id
+        );
+
+        if (purchaseResponse?.success) {
+          setPurchases(
+            purchaseResponse.data || []
+          );
+        } else {
+          setPurchases([]);
+        }
       } catch (error) {
         console.error(
-          "Vendor purchase summary error:",
+          "Vendor purchase history error:",
           error
         );
 
         const msg =
           error?.response?.data?.message ||
-          "Failed to fetch purchase summary";
+          "Failed to fetch vendor purchase history";
 
         toast.error(msg);
 
@@ -62,13 +89,15 @@ const VendorHistoryModal = ({
           totalPurchases: 0,
           purchaseCount: 0,
         });
+
+        setPurchases([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSummary();
-  }, [isOpen, vendor]);
+    fetchVendorHistory();
+  }, [isOpen, vendor?._id]);
 
   // ======================================================
   // CLOSE ON ESCAPE
@@ -125,7 +154,48 @@ const VendorHistoryModal = ({
   const formatCurrency = (value) => {
     const amount = Number(value) || 0;
 
-    return `Rs. ${amount.toLocaleString("en-PK")}`;
+    return `Rs. ${amount.toLocaleString(
+      "en-PK"
+    )}`;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "—";
+    }
+
+    return parsedDate.toLocaleDateString(
+      "en-PK",
+      {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }
+    );
+  };
+
+  const togglePurchase = (id) => {
+    setExpandedPurchase((current) =>
+      current === id ? null : id
+    );
+  };
+
+  const getPaymentStatusClasses = (status) => {
+    switch (status) {
+      case "Paid":
+        return "bg-green-100 text-green-700";
+
+      case "Partial":
+        return "bg-amber-100 text-amber-700";
+
+      case "Unpaid":
+      default:
+        return "bg-red-100 text-red-700";
+    }
   };
 
   // ======================================================
@@ -142,9 +212,22 @@ const VendorHistoryModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/50 p-3 sm:p-4 md:p-6"
+      className="
+        fixed
+        inset-0
+        z-[100]
+        flex
+        items-center
+        justify-center
+        bg-slate-950/50
+        p-3
+        sm:p-4
+        md:p-6
+      "
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
+        if (
+          event.target === event.currentTarget
+        ) {
           onClose();
         }
       }}
@@ -157,7 +240,7 @@ const VendorHistoryModal = ({
         className="
           flex
           w-full
-          max-w-2xl
+          max-w-4xl
           max-h-[calc(100vh-1.5rem)]
           sm:max-h-[calc(100vh-2rem)]
           md:max-h-[calc(100vh-3rem)]
@@ -194,8 +277,6 @@ const VendorHistoryModal = ({
             sm:py-4
           "
         >
-          {/* Vendor Heading */}
-
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-3">
               <div
@@ -241,13 +322,11 @@ const VendorHistoryModal = ({
                   "
                 >
                   {vendor.companyName ||
-                    "No Company Name"}
+                    "Vendor Purchase History"}
                 </p>
               </div>
             </div>
           </div>
-
-          {/* Close */}
 
           <button
             type="button"
@@ -371,48 +450,6 @@ const VendorHistoryModal = ({
                   </div>
                 </div>
 
-                {/* Email */}
-
-                <div
-                  className="
-                    min-w-0
-                    rounded-2xl
-                    border
-                    border-slate-100
-                    bg-slate-50
-                    p-3.5
-                    sm:p-4
-                  "
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="
-                        flex
-                        h-8
-                        w-8
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-lg
-                        bg-white
-                        text-slate-500
-                      "
-                    >
-                      <Mail size={15} />
-                    </div>
-
-                    <div className="min-w-0">
-                      <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">
-                        Email
-                      </span>
-
-                      <span className="mt-1 block break-all text-sm font-medium text-slate-700">
-                        {vendor.email || "—"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Address */}
 
                 <div
@@ -423,7 +460,6 @@ const VendorHistoryModal = ({
                     border-slate-100
                     bg-slate-50
                     p-3.5
-                    sm:col-span-2
                     sm:p-4
                   "
                 >
@@ -509,7 +545,7 @@ const VendorHistoryModal = ({
                 <div
                   className="
                     flex
-                    min-h-[150px]
+                    min-h-[130px]
                     items-center
                     justify-center
                     rounded-2xl
@@ -525,7 +561,7 @@ const VendorHistoryModal = ({
                     />
 
                     <span>
-                      Loading purchase summary...
+                      Loading purchase history...
                     </span>
                   </div>
                 </div>
@@ -538,7 +574,7 @@ const VendorHistoryModal = ({
                     sm:grid-cols-2
                   "
                 >
-                  {/* Total Volume */}
+                  {/* Total Purchase Amount */}
 
                   <div
                     className="
@@ -561,7 +597,7 @@ const VendorHistoryModal = ({
                         text-[#1E3A8A]
                       "
                     >
-                      Total Volume
+                      Total Purchase Value
                     </span>
 
                     <div
@@ -580,7 +616,7 @@ const VendorHistoryModal = ({
                     </div>
 
                     <p className="mt-1 text-xs text-blue-700/70">
-                      Total purchase value
+                      Total value purchased
                     </p>
                   </div>
 
@@ -626,7 +662,7 @@ const VendorHistoryModal = ({
                     </div>
 
                     <p className="mt-1 text-xs text-slate-400">
-                      Purchase orders
+                      Purchase records
                     </p>
                   </div>
                 </div>
@@ -634,58 +670,400 @@ const VendorHistoryModal = ({
             </section>
 
             {/* ==================================================
-                FUTURE HISTORY
+                PURCHASE HISTORY
             ================================================== */}
 
-            <section
-              className="
-                border-t
-                border-slate-200
-                pt-4
-                sm:pt-5
-              "
-            >
-              <div
-                className="
-                  flex
-                  flex-col
-                  gap-3
-                  rounded-2xl
-                  border
-                  border-amber-200
-                  bg-amber-50
-                  p-3.5
-                  sm:flex-row
-                  sm:items-center
-                  sm:justify-between
-                  sm:p-4
-                "
-              >
-                <p className="text-xs leading-5 text-amber-800 sm:text-sm">
-                  Detailed line-item purchase history
-                  integration coming soon.
-                </p>
-
-                <span
+            <section>
+              <div className="mb-3">
+                <h4
                   className="
-                    inline-flex
-                    w-fit
-                    shrink-0
-                    items-center
-                    rounded-md
-                    bg-amber-200
-                    px-2
-                    py-1
-                    text-[10px]
+                    text-sm
                     font-bold
-                    uppercase
-                    tracking-wide
-                    text-amber-800
+                    text-slate-800
+                    sm:text-base
                   "
                 >
-                  Notice
-                </span>
+                  Purchase History
+                </h4>
+
+                <p className="mt-0.5 text-xs text-slate-400 sm:text-sm">
+                  Products purchased from this vendor
+                </p>
               </div>
+
+              {loading ? (
+                <div
+                  className="
+                    flex
+                    min-h-[180px]
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    border
+                    border-slate-200
+                    bg-slate-50
+                  "
+                >
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <Loader2
+                      size={18}
+                      className="animate-spin text-[#1E3A8A]"
+                    />
+
+                    <span>
+                      Loading purchases...
+                    </span>
+                  </div>
+                </div>
+              ) : purchases.length === 0 ? (
+                <div
+                  className="
+                    flex
+                    min-h-[180px]
+                    flex-col
+                    items-center
+                    justify-center
+                    rounded-2xl
+                    border
+                    border-dashed
+                    border-slate-300
+                    bg-slate-50
+                    px-5
+                    text-center
+                  "
+                >
+                  <Package
+                    size={30}
+                    className="text-slate-400"
+                  />
+
+                  <p className="mt-3 text-sm font-semibold text-slate-700">
+                    No purchases found
+                  </p>
+
+                  <p className="mt-1 text-xs text-slate-400">
+                    No completed purchases are recorded for this vendor.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {purchases.map((purchase) => {
+                    const purchaseId =
+                      purchase._id;
+
+                    const isExpanded =
+                      expandedPurchase ===
+                      purchaseId;
+
+                    return (
+                      <div
+                        key={purchaseId}
+                        className="
+                          overflow-hidden
+                          rounded-2xl
+                          border
+                          border-slate-200
+                          bg-white
+                        "
+                      >
+                        {/* Purchase Header */}
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            togglePurchase(
+                              purchaseId
+                            )
+                          }
+                          className="
+                            flex
+                            w-full
+                            items-center
+                            justify-between
+                            gap-3
+                            p-4
+                            text-left
+                            transition
+                            hover:bg-slate-50
+                            sm:p-5
+                          "
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="flex items-center gap-2">
+                                <Receipt
+                                  size={16}
+                                  className="shrink-0 text-[#1E3A8A]"
+                                />
+
+                                <span className="text-sm font-bold text-slate-800">
+                                  {purchase.invoiceNumber ||
+                                    "Purchase"}
+                                </span>
+                              </div>
+
+                              <span
+                                className={`
+                                  rounded-full
+                                  px-2.5
+                                  py-1
+                                  text-[10px]
+                                  font-bold
+                                  ${getPaymentStatusClasses(
+                                    purchase.paymentStatus
+                                  )}
+                                `}
+                              >
+                                {purchase.paymentStatus ||
+                                  "Unpaid"}
+                              </span>
+                            </div>
+
+                            <div
+                              className="
+                                mt-2
+                                flex
+                                flex-wrap
+                                gap-x-4
+                                gap-y-1
+                                text-xs
+                                text-slate-500
+                              "
+                            >
+                              <span className="flex items-center gap-1">
+                                <CalendarDays
+                                  size={13}
+                                />
+
+                                {formatDate(
+                                  purchase.purchaseDate
+                                )}
+                              </span>
+
+                              <span>
+                                {purchase.items?.length ||
+                                  0}{" "}
+                                item
+                                {(purchase.items?.length ||
+                                  0) !== 1
+                                  ? "s"
+                                  : ""}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-3">
+                            <div className="hidden text-right sm:block">
+                              <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                                Total
+                              </p>
+
+                              <p className="text-sm font-bold text-slate-800">
+                                {formatCurrency(
+                                  purchase.totalAmount
+                                )}
+                              </p>
+                            </div>
+
+                            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                              {isExpanded ? (
+                                <ChevronUp
+                                  size={17}
+                                />
+                              ) : (
+                                <ChevronDown
+                                  size={17}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </button>
+
+                        {/* Expanded Purchase Details */}
+
+                        {isExpanded && (
+                          <div
+                            className="
+                              border-t
+                              border-slate-200
+                              bg-slate-50/70
+                              p-4
+                              sm:p-5
+                            "
+                          >
+                            {/* Mobile Total */}
+
+                            <div className="mb-4 flex items-center justify-between sm:hidden">
+                              <span className="text-xs text-slate-500">
+                                Total
+                              </span>
+
+                              <span className="text-sm font-bold text-slate-800">
+                                {formatCurrency(
+                                  purchase.totalAmount
+                                )}
+                              </span>
+                            </div>
+
+                            {/* Items */}
+
+                            <div className="space-y-2">
+                              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                Purchased Products
+                              </p>
+
+                              {purchase.items?.length ? (
+                                <div className="space-y-2">
+                                  {purchase.items.map(
+                                    (
+                                      item,
+                                      index
+                                    ) => (
+                                      <div
+                                        key={`${purchaseId}-${index}`}
+                                        className="
+                                          rounded-xl
+                                          border
+                                          border-slate-200
+                                          bg-white
+                                          p-3
+                                        "
+                                      >
+                                        <div
+                                          className="
+                                            flex
+                                            flex-col
+                                            gap-3
+                                            sm:flex-row
+                                            sm:items-center
+                                            sm:justify-between
+                                          "
+                                        >
+                                          <div className="min-w-0">
+                                            <p className="break-words text-sm font-semibold text-slate-800">
+                                              {item.productName ||
+                                                item
+                                                  .product
+                                                  ?.productName ||
+                                                "Product"}
+                                            </p>
+
+                                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+                                              <span>
+                                                Qty:{" "}
+                                                {item.quantity ??
+                                                  0}
+                                              </span>
+
+                                              <span>
+                                                Rate:{" "}
+                                                {formatCurrency(
+                                                  item.rate
+                                                )}
+                                              </span>
+
+                                              {item.stockType && (
+                                                <span>
+                                                  Stock:{" "}
+                                                  {
+                                                    item.stockType
+                                                  }
+                                                </span>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          <div className="shrink-0 sm:text-right">
+                                            <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                                              Line Total
+                                            </p>
+
+                                            <p className="text-sm font-bold text-slate-800">
+                                              {formatCurrency(
+                                                item.lineTotal ??
+                                                  Number(
+                                                    item.quantity ||
+                                                      0
+                                                  ) *
+                                                    Number(
+                                                      item.rate ||
+                                                        0
+                                                    )
+                                              )}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-slate-400">
+                                  No item details available.
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Payment Details */}
+
+                            <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                              <div className="rounded-xl border border-slate-200 bg-white p-3">
+                                <p className="text-[10px] uppercase tracking-wide text-slate-400">
+                                  Total
+                                </p>
+
+                                <p className="mt-1 text-sm font-bold text-slate-800">
+                                  {formatCurrency(
+                                    purchase.totalAmount
+                                  )}
+                                </p>
+                              </div>
+
+                              <div className="rounded-xl border border-green-100 bg-green-50 p-3">
+                                <p className="text-[10px] uppercase tracking-wide text-green-600">
+                                  Paid
+                                </p>
+
+                                <p className="mt-1 text-sm font-bold text-green-700">
+                                  {formatCurrency(
+                                    purchase.paidAmount
+                                  )}
+                                </p>
+                              </div>
+
+                              <div className="rounded-xl border border-red-100 bg-red-50 p-3">
+                                <p className="text-[10px] uppercase tracking-wide text-red-600">
+                                  Remaining
+                                </p>
+
+                                <p className="mt-1 text-sm font-bold text-red-700">
+                                  {formatCurrency(
+                                    purchase.remainingBalance
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Notes */}
+
+                            {purchase.notes && (
+                              <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+                                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">
+                                  Purchase Notes
+                                </p>
+
+                                <p className="mt-1 break-words text-sm leading-5 text-slate-700">
+                                  {purchase.notes}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           </div>
         </div>

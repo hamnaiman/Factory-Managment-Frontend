@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   FileText,
   Printer,
@@ -11,6 +11,7 @@ import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 
 import * as reportService from "../services/reportsService";
+import { getProducts } from "../services/productService";
 import { getLabours } from "../services/labourService";
 
 // ======================================================
@@ -33,6 +34,22 @@ const formatDate = (value) => {
   });
 };
 
+const formatShortDate = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
 const getDayName = (value) => {
   if (!value) return "";
 
@@ -51,6 +68,41 @@ const formatCurrency = (value) => {
   const amount = Number(value || 0);
 
   return `Rs. ${amount.toLocaleString("en-PK")}`;
+};
+
+// Keep date-only API values in local calendar time.
+// This prevents UTC conversion from moving a record to the previous/next day.
+const getDateKey = (value) => {
+  if (!value) return "";
+
+  const raw = String(value);
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+    return raw.slice(0, 10);
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+
+  return `${y}-${m}-${d}`;
+};
+
+const toArray = (value) => {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== "object") return [];
+
+  if (Array.isArray(value.data)) return value.data;
+  if (Array.isArray(value.records)) return value.records;
+  if (Array.isArray(value.results)) return value.results;
+  if (Array.isArray(value.attendance)) return value.attendance;
+  if (Array.isArray(value.payments)) return value.payments;
+
+  return [];
 };
 
 const formatColumnName = (key) => {
@@ -88,36 +140,66 @@ const isMoneyField = (key) => {
     value.includes("profit") ||
     value.includes("price") ||
     value.includes("cost") ||
-    value.includes("balance")
+    value.includes("balance") ||
+    value.includes("payment")
   );
 };
 
 // ======================================================
-// ONLY 3 MAIN REPORT TYPES
+// REPORTS
 // ======================================================
 
 const REPORTS = [
-  // SALES
   {
     id: "sales_summary",
     name: "Sales Report",
     category: "Sales",
   },
-
-  // STOCK
   {
     id: "stock_overall",
     name: "Stock Report",
     category: "Stock",
   },
-
-  // LABOUR
   {
     id: "labour",
     name: "Labour Report",
     category: "Labour",
   },
 ];
+
+// ======================================================
+// MONTH DATE RANGE
+// ======================================================
+
+const getMonthDateRange = (month, year) => {
+  const numericMonth = Number(month);
+  const numericYear = Number(year);
+
+  const firstDay = new Date(
+    numericYear,
+    numericMonth - 1,
+    1
+  );
+
+  const lastDay = new Date(
+    numericYear,
+    numericMonth,
+    0
+  );
+
+  const formatInputDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+
+    return `${y}-${m}-${d}`;
+  };
+
+  return {
+    fromDate: formatInputDate(firstDay),
+    toDate: formatInputDate(lastDay),
+  };
+};
 
 // ======================================================
 // COMPONENT
@@ -131,10 +213,8 @@ function Reports() {
 
   const [loading, setLoading] = useState(false);
 
-  // Normal reports remain arrays
   const [reportData, setReportData] = useState([]);
 
-  // Combined labour report
   const [labourReport, setLabourReport] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -151,7 +231,6 @@ function Reports() {
     year: new Date().getFullYear(),
 
     worker: "",
-
     product: "",
     stockType: "",
     movementType: "",
@@ -190,6 +269,36 @@ function Reports() {
   }, []);
 
   // ======================================================
+  // LOAD PRODUCTS
+  // ======================================================
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const response = await getProducts();
+
+        const data =
+          response?.data?.data ||
+          response?.data ||
+          [];
+
+        setProducts(
+          Array.isArray(data) ? data : []
+        );
+      } catch (error) {
+        console.error(
+          "Product loading error:",
+          error
+        );
+
+        setProducts([]);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
+  // ======================================================
   // CHANGE FILTER
   // ======================================================
 
@@ -210,10 +319,12 @@ function Reports() {
     setFilters((prev) => ({
       ...prev,
       report,
+
       worker: "",
       product: "",
       stockType: "",
       movementType: "",
+
       fromDate: "",
       toDate: "",
     }));
@@ -231,33 +342,23 @@ function Reports() {
       return [];
     }
 
-    // Axios response
     if (response.data) {
-      if (
-        Array.isArray(response.data.data)
-      ) {
+      if (Array.isArray(response.data.data)) {
         return response.data.data;
       }
 
-      if (
-        Array.isArray(response.data.records)
-      ) {
+      if (Array.isArray(response.data.records)) {
         return response.data.records;
       }
 
-      if (
-        Array.isArray(response.data.results)
-      ) {
+      if (Array.isArray(response.data.results)) {
         return response.data.results;
       }
 
-      if (
-        Array.isArray(response.data)
-      ) {
+      if (Array.isArray(response.data)) {
         return response.data;
       }
 
-      // Sometimes API returns object directly
       if (
         response.data.data &&
         typeof response.data.data === "object"
@@ -270,15 +371,11 @@ function Reports() {
       return response;
     }
 
-    if (
-      Array.isArray(response.records)
-    ) {
+    if (Array.isArray(response.records)) {
       return response.records;
     }
 
-    if (
-      Array.isArray(response.results)
-    ) {
+    if (Array.isArray(response.results)) {
       return response.results;
     }
 
@@ -312,22 +409,18 @@ function Reports() {
   };
 
   // ======================================================
-  // FIND VALUE FROM API OBJECT
+  // NORMALIZE WORKER ID
   // ======================================================
 
-  const findValue = (obj, keys) => {
-    if (!obj) return 0;
+  const getWorkerId = (worker) => {
+    if (!worker) return "";
 
-    for (const key of keys) {
-      if (
-        obj[key] !== undefined &&
-        obj[key] !== null
-      ) {
-        return obj[key];
-      }
-    }
-
-    return 0;
+    return String(
+      worker?._id ||
+        worker?.worker?._id ||
+        worker?.worker ||
+        ""
+    );
   };
 
   // ======================================================
@@ -345,21 +438,16 @@ function Reports() {
       // SALES
       // ==================================================
 
-      if (
-        activeReport === "sales_summary"
-      ) {
+      if (activeReport === "sales_summary") {
         const response =
           await reportService.getSalesSummaryReport(
             filters
           );
 
-        const data =
-          extractData(response);
+        const data = extractData(response);
 
         setReportData(
-          Array.isArray(data)
-            ? data
-            : []
+          Array.isArray(data) ? data : []
         );
 
         return;
@@ -369,50 +457,52 @@ function Reports() {
       // STOCK
       // ==================================================
 
-      if (
-        activeReport === "stock_overall"
-      ) {
+      if (activeReport === "stock_overall") {
         const response =
           await reportService.getStockReport(
             filters
           );
 
-        const data =
-          extractData(response);
+        const data = extractData(response);
 
         setReportData(
-          Array.isArray(data)
-            ? data
-            : []
+          Array.isArray(data) ? data : []
         );
 
         return;
       }
 
       // ==================================================
-      // LABOUR COMBINED REPORT
+      // LABOUR REPORT
       // ==================================================
 
-      if (
-        activeReport === "labour"
-      ) {
+      if (activeReport === "labour") {
         if (!filters.worker) {
-          toast.error(
-            "Please select a worker"
-          );
-
+          toast.error("Please select a worker");
           return;
         }
 
         // ------------------------------------------------
-        // ALL LABOUR DATA TOGETHER
+        // MONTH RANGE
         // ------------------------------------------------
+
+        const { fromDate, toDate } =
+          getMonthDateRange(
+            filters.month,
+            filters.year
+          );
 
         const params = {
           worker: filters.worker,
           month: Number(filters.month),
           year: Number(filters.year),
         };
+
+        // ------------------------------------------------
+        // IMPORTANT:
+        // Attendance uses month/year.
+        // Wages/payments/outstanding use dates.
+        // ------------------------------------------------
 
         const [
           attendanceResponse,
@@ -424,17 +514,23 @@ function Reports() {
             params
           ),
 
-          reportService.getLabourWageReport(
-            params
-          ),
+          reportService.getLabourWageReport({
+            worker: filters.worker,
+            fromDate,
+            toDate,
+          }),
 
-          reportService.getLabourPaymentReport(
-            params
-          ),
+          reportService.getLabourPaymentReport({
+            worker: filters.worker,
+            fromDate,
+            toDate,
+          }),
 
-          reportService.getLabourOutstandingReport(
-            params
-          ),
+          reportService.getLabourOutstandingReport({
+            worker: filters.worker,
+            fromDate,
+            toDate,
+          }),
         ]);
 
         // ------------------------------------------------
@@ -442,71 +538,66 @@ function Reports() {
         // ------------------------------------------------
 
         const attendanceData =
-          extractData(
-            attendanceResponse
-          );
+          extractData(attendanceResponse);
 
         const wagesData =
-          extractData(
-            wagesResponse
-          );
+          extractData(wagesResponse);
 
         const paymentsData =
-          extractData(
-            paymentsResponse
-          );
+          extractData(paymentsResponse);
 
         const outstandingData =
-          extractData(
-            outstandingResponse
+          extractData(outstandingResponse);
+
+        // ------------------------------------------------
+        // ATTENDANCE
+        // ------------------------------------------------
+
+        const attendance = toArray(
+          attendanceData?.attendance ??
+          attendanceData
+        );
+
+        // ------------------------------------------------
+        // PAYMENTS
+        // ------------------------------------------------
+
+        const payments = toArray(
+          paymentsData?.payments ??
+          paymentsData
+        );
+
+        // ------------------------------------------------
+        // WAGES
+        // ------------------------------------------------
+
+        const wageRows = toArray(wagesData);
+
+        const wageObject =
+          wageRows[0] || {};
+
+        const selectedWorker =
+          workers.find(
+            (worker) =>
+              getWorkerId(worker) &&
+              getWorkerId(worker) ===
+                String(filters.worker)
           );
 
-        // ------------------------------------------------
-        // NORMALIZE ATTENDANCE
-        // ------------------------------------------------
-
-        const attendance = Array.isArray(
-          attendanceData
-        )
-          ? attendanceData
-          : attendanceData?.attendance ||
-            attendanceData?.records ||
-            [];
-
-        // ------------------------------------------------
-        // NORMALIZE WAGES
-        // ------------------------------------------------
-
-        const wages =
-          Array.isArray(wagesData)
-            ? wagesData
-            : wagesData?.data ||
-              wagesData ||
-              {};
-
-        // ------------------------------------------------
-        // NORMALIZE PAYMENTS
-        // ------------------------------------------------
-
-        const payments =
-          Array.isArray(paymentsData)
-            ? paymentsData
-            : paymentsData?.data ||
-              paymentsData ||
-              {};
-
-        // ------------------------------------------------
-        // NORMALIZE OUTSTANDING
-        // ------------------------------------------------
-
-        const outstanding =
-          Array.isArray(
-            outstandingData
-          )
-            ? outstandingData
-            : outstandingData?.data ||
-              outstandingData ||
-              {};
+        const dailyWage =
+          getNumber(
+            wageObject,
+            [
+              "dailyWage",
+              "wagePerDay",
+              "rate",
+              "salaryPerDay",
+              "wage",
+            ]
+          ) ||
+          Number(
+            selectedWorker?.dailyWage || 0
+          );
 
         // ------------------------------------------------
         // ATTENDANCE COUNTS
@@ -519,48 +610,25 @@ function Reports() {
         attendance.forEach((item) => {
           const status =
             String(
-              item.status || ""
+              item?.status || ""
             ).toLowerCase();
 
-          if (
-            status === "present"
-          ) {
+          if (status === "present") {
             presentDays++;
           }
 
-          if (
-            status === "absent"
-          ) {
+          if (status === "absent") {
             absentDays++;
           }
 
-          if (
-            status === "leave"
-          ) {
+          if (status === "leave") {
             leaveDays++;
           }
         });
 
         // ------------------------------------------------
-        // WAGE VALUES
+        // TOTAL WAGES
         // ------------------------------------------------
-
-        const wageObject =
-          Array.isArray(wages)
-            ? wages[0] || {}
-            : wages;
-
-        const dailyWage =
-          getNumber(
-            wageObject,
-            [
-              "dailyWage",
-              "wagePerDay",
-              "rate",
-              "salaryPerDay",
-              "wage",
-            ]
-          );
 
         let totalWages =
           getNumber(
@@ -570,11 +638,10 @@ function Reports() {
               "totalWage",
               "earnedWages",
               "totalSalary",
+              "totalWagesEarned",
             ]
           );
 
-        // If API does not give total wage,
-        // calculate from present days.
         if (
           totalWages === 0 &&
           dailyWage > 0
@@ -584,114 +651,230 @@ function Reports() {
         }
 
         // ------------------------------------------------
-        // PAYMENT VALUES
+        // PAYMENT TOTALS
         // ------------------------------------------------
-
-        const paymentObject =
-          Array.isArray(payments)
-            ? payments
-            : payments;
 
         let totalPaid = 0;
         let salaryPaid = 0;
         let advancePaid = 0;
 
-        if (
-          Array.isArray(paymentObject)
-        ) {
-          paymentObject.forEach(
-            (payment) => {
-              const amount =
-                Number(
-                  payment.amount || 0
-                );
+        if (Array.isArray(payments)) {
+          payments.forEach((payment) => {
+            const amount =
+              Number(payment?.amount || 0);
 
-              totalPaid += amount;
+            totalPaid += amount;
 
-              const type =
-                String(
-                  payment.paymentType ||
-                    payment.type ||
-                    ""
-                ).toLowerCase();
+            const type =
+              String(
+                payment?.paymentType ||
+                  payment?.type ||
+                  ""
+              ).toLowerCase();
 
-              if (
-                type === "advance"
-              ) {
-                advancePaid += amount;
-              } else {
-                salaryPaid += amount;
-              }
+            if (type === "advance") {
+              advancePaid += amount;
+            } else {
+              salaryPaid += amount;
             }
-          );
-        } else {
-          totalPaid =
-            getNumber(
-              paymentObject,
-              [
-                "totalPaid",
-                "totalPayment",
-                "paid",
-              ]
-            );
-
-          salaryPaid =
-            getNumber(
-              paymentObject,
-              [
-                "salaryPaid",
-                "salary",
-              ]
-            );
-
-          advancePaid =
-            getNumber(
-              paymentObject,
-              [
-                "advancePaid",
-                "advance",
-              ]
-            );
+          });
         }
 
         // ------------------------------------------------
-        // BALANCE
+        // PAYMENT DATE MAP
         // ------------------------------------------------
 
-        let balance =
-          getNumber(
-            outstanding,
-            [
-              "balance",
-              "outstandingBalance",
-              "remainingBalance",
-              "remaining",
-            ]
-          );
+        const paymentMap = {};
 
-        // If backend didn't send balance,
-        // calculate it.
-        if (
-          balance === 0 &&
-          totalWages > 0
-        ) {
-          balance =
-            totalWages - totalPaid;
+        payments.forEach((payment) => {
+          const rawDate =
+            payment?.paymentDate ||
+            payment?.date ||
+            payment?.createdAt;
+
+          if (!rawDate) return;
+
+          const key = getDateKey(rawDate);
+
+          if (!key) return;
+
+          if (!paymentMap[key]) {
+            paymentMap[key] = {
+              total: 0,
+              salary: 0,
+              advance: 0,
+              records: [],
+            };
+          }
+
+          const amount =
+            Number(payment?.amount || 0);
+
+          const type =
+            String(
+              payment?.paymentType ||
+                payment?.type ||
+                "salary"
+            ).toLowerCase();
+
+          paymentMap[key].total += amount;
+
+          if (type === "advance") {
+            paymentMap[key].advance += amount;
+          } else {
+            paymentMap[key].salary += amount;
+          }
+
+          paymentMap[key].records.push(
+            payment
+          );
+        });
+
+        // ------------------------------------------------
+        // ATTENDANCE DATE MAP
+        // ------------------------------------------------
+
+        const attendanceMap = {};
+
+        attendance.forEach((item) => {
+          const rawDate =
+            item?.date ||
+            item?.attendanceDate ||
+            item?.attendance_date;
+
+          if (!rawDate) return;
+
+          const key = getDateKey(rawDate);
+
+          if (!key) return;
+
+          attendanceMap[key] = item;
+        });
+
+        // ------------------------------------------------
+        // CREATE NOTEBOOK STYLE LEDGER
+        // ------------------------------------------------
+
+        const ledgerMap = {};
+
+        Object.keys(attendanceMap).forEach(
+          (date) => {
+            ledgerMap[date] = {
+              date,
+              attendance:
+                attendanceMap[date],
+              payment:
+                paymentMap[date] || null,
+            };
+          }
+        );
+
+        Object.keys(paymentMap).forEach(
+          (date) => {
+            if (!ledgerMap[date]) {
+              ledgerMap[date] = {
+                date,
+                attendance: null,
+                payment:
+                  paymentMap[date],
+              };
+            }
+          }
+        );
+
+        const ledgerRows = Object.values(
+          ledgerMap
+        ).sort(
+          (a, b) =>
+            new Date(a.date) -
+            new Date(b.date)
+        );
+
+        // ------------------------------------------------
+        // RUNNING BALANCE
+        // ------------------------------------------------
+
+        let runningBalance = 0;
+
+        const finalLedger =
+          ledgerRows.map((row) => {
+            const status =
+              String(
+                row?.attendance?.status ||
+                  ""
+              ).toLowerCase();
+
+            let earned = 0;
+
+            if (status === "present") {
+              earned = dailyWage;
+            }
+
+            const paid =
+              Number(
+                row?.payment?.total || 0
+              );
+
+            runningBalance =
+              runningBalance +
+              earned -
+              paid;
+
+            return {
+              ...row,
+              earned,
+              paid,
+              runningBalance,
+            };
+          });
+
+        // ------------------------------------------------
+        // OUTSTANDING API VALUE
+        // ------------------------------------------------
+
+        const outstandingRows = toArray(outstandingData);
+
+        const outstandingObject =
+          outstandingRows.length > 0
+            ? outstandingRows.find(
+                (row) =>
+                  String(
+                    row?.workerId ||
+                      row?.worker?._id ||
+                      row?.worker ||
+                      ""
+                  ) ===
+                  String(filters.worker)
+              ) || outstandingRows[0] || {}
+            : outstandingData || {};
+
+        const balanceKeys = [
+          "remainingBalance",
+          "outstandingBalance",
+          "balance",
+          "remaining",
+        ];
+
+        const hasApiBalance = balanceKeys.some(
+          (key) =>
+            outstandingObject?.[key] !== undefined &&
+            outstandingObject?.[key] !== null &&
+            outstandingObject?.[key] !== ""
+        );
+
+        let finalBalance = getNumber(
+          outstandingObject,
+          balanceKeys
+        );
+
+        // Only fall back to the calculated balance when the API did not
+        // provide a balance at all.
+        if (!hasApiBalance) {
+          finalBalance = runningBalance;
         }
 
         // ------------------------------------------------
-        // WORKER
-        // ------------------------------------------------
-
-        const selectedWorker =
-          workers.find(
-            (worker) =>
-              worker._id ===
-              filters.worker
-          );
-
-        // ------------------------------------------------
-        // FINAL COMBINED REPORT
+        // FINAL REPORT
         // ------------------------------------------------
 
         setLabourReport({
@@ -706,12 +889,23 @@ function Reports() {
             filters.year
           ),
 
+          fromDate,
+          toDate,
+
           attendance,
+
+          payments,
+
+          ledger: finalLedger,
 
           summary: {
             presentDays,
             absentDays,
             leaveDays,
+            totalMarkedDays:
+              presentDays +
+              absentDays +
+              leaveDays,
           },
 
           wages: {
@@ -719,13 +913,13 @@ function Reports() {
             totalWages,
           },
 
-          payments: {
+          paymentSummary: {
             salaryPaid,
             advancePaid,
             totalPaid,
           },
 
-          balance,
+          balance: finalBalance,
         });
 
         return;
@@ -737,8 +931,7 @@ function Reports() {
       );
 
       toast.error(
-        error?.response?.data
-          ?.message ||
+        error?.response?.data?.message ||
           "Failed to load report"
       );
 
@@ -757,34 +950,34 @@ function Reports() {
   // SELECTED WORKER
   // ======================================================
 
-  const selectedWorker =
-    workers.find(
-      (worker) =>
-        worker._id ===
-        filters.worker
-    );
+  const selectedWorker = useMemo(
+    () =>
+      workers.find(
+        (worker) =>
+          getWorkerId(worker) ===
+          String(filters.worker)
+      ),
+    [workers, filters.worker]
+  );
 
   // ======================================================
   // MONTH NAME
   // ======================================================
 
-  const monthName =
-    new Date(
-      2026,
-      Number(filters.month) - 1,
-      1
-    ).toLocaleString("en-US", {
-      month: "long",
-    });
+  const monthName = new Date(
+    Number(filters.year),
+    Number(filters.month) - 1,
+    1
+  ).toLocaleString("en-US", {
+    month: "long",
+  });
 
   // ======================================================
-  // EXPORT CSV
+  // EXPORT
   // ======================================================
 
   const handleExport = () => {
-    if (
-      activeReport === "labour"
-    ) {
+    if (activeReport === "labour") {
       if (!labourReport) {
         toast.error(
           "Generate a report first"
@@ -794,76 +987,97 @@ function Reports() {
       }
 
       const rows = [
-        ["Worker", selectedWorker?.name || ""],
+        [
+          "Labour Report",
+        ],
+
+        [
+          "Worker",
+          labourReport.worker?.name ||
+            "",
+        ],
+
         [
           "Month",
           `${monthName} ${filters.year}`,
         ],
+
         [],
-        ["ATTENDANCE"],
-        ["Date", "Day", "Status"],
-        ...(
-          labourReport.attendance ||
-          []
-        ).map((item) => [
-          formatDate(
-            item.date ||
-              item.attendanceDate
-          ),
-          getDayName(
-            item.date ||
-              item.attendanceDate
-          ),
-          String(
-            item.status || ""
-          ),
-        ]),
+
+        [
+          "Date",
+          "Day",
+          "Attendance",
+          "Earned",
+          "Payment",
+          "Balance",
+        ],
+
+        ...(labourReport.ledger || []).map(
+          (row) => [
+            formatShortDate(
+              row.date
+            ),
+
+            getDayName(
+              row.date
+            ),
+
+            String(
+              row?.attendance?.status ||
+                "-"
+            ),
+
+            row.earned || 0,
+
+            row.paid || 0,
+
+            row.runningBalance || 0,
+          ]
+        ),
+
         [],
+
         [
           "Present Days",
-          labourReport.summary
-            .presentDays,
+          labourReport.summary.presentDays,
         ],
+
         [
           "Absent Days",
-          labourReport.summary
-            .absentDays,
+          labourReport.summary.absentDays,
         ],
+
         [
           "Leave Days",
-          labourReport.summary
-            .leaveDays,
+          labourReport.summary.leaveDays,
         ],
-        [],
-        ["WAGES"],
+
         [
           "Daily Wage",
-          labourReport.wages
-            .dailyWage,
+          labourReport.wages.dailyWage,
         ],
+
         [
           "Total Wages",
-          labourReport.wages
-            .totalWages,
+          labourReport.wages.totalWages,
         ],
-        [],
-        ["PAYMENTS"],
+
         [
           "Salary Paid",
-          labourReport.payments
-            .salaryPaid,
+          labourReport.paymentSummary.salaryPaid,
         ],
+
         [
           "Advance Paid",
-          labourReport.payments
-            .advancePaid,
+          labourReport.paymentSummary.advancePaid,
         ],
+
         [
           "Total Paid",
-          labourReport.payments
-            .totalPaid,
+          labourReport.paymentSummary.totalPaid,
         ],
-        [],
+
         [
           "Remaining Balance",
           labourReport.balance,
@@ -895,33 +1109,26 @@ function Reports() {
       );
 
       const url =
-        URL.createObjectURL(
-          blob
-        );
+        URL.createObjectURL(blob);
 
       const link =
-        document.createElement(
-          "a"
-        );
+        document.createElement("a");
 
       link.href = url;
 
       link.download =
-        "labour-report.csv";
+        `${
+          selectedWorker?.name ||
+          "labour"
+        }-labour-report.csv`;
 
-      document.body.appendChild(
-        link
-      );
+      document.body.appendChild(link);
 
       link.click();
 
-      document.body.removeChild(
-        link
-      );
+      document.body.removeChild(link);
 
-      URL.revokeObjectURL(
-        url
-      );
+      URL.revokeObjectURL(url);
 
       return;
     }
@@ -940,9 +1147,8 @@ function Reports() {
       ).filter(
         (key) =>
           !isHiddenField(key) &&
-          typeof reportData[0][
-            key
-          ] !== "object"
+          typeof reportData[0][key] !==
+            "object"
       );
 
     const headers =
@@ -953,14 +1159,14 @@ function Reports() {
     const rows =
       reportData.map((row) =>
         columns
-          .map((column) =>
-            `"${String(
-              row[column] ??
-                ""
-            ).replace(
-              /"/g,
-              '""'
-            )}"`
+          .map(
+            (column) =>
+              `"${String(
+                row[column] ?? ""
+              ).replace(
+                /"/g,
+                '""'
+              )}"`
           )
           .join(",")
       );
@@ -979,33 +1185,23 @@ function Reports() {
     );
 
     const url =
-      URL.createObjectURL(
-        blob
-      );
+      URL.createObjectURL(blob);
 
     const link =
-      document.createElement(
-        "a"
-      );
+      document.createElement("a");
 
     link.href = url;
 
     link.download =
       `${activeReport}.csv`;
 
-    document.body.appendChild(
-      link
-    );
+    document.body.appendChild(link);
 
     link.click();
 
-    document.body.removeChild(
-      link
-    );
+    document.body.removeChild(link);
 
-    URL.revokeObjectURL(
-      url
-    );
+    URL.revokeObjectURL(url);
   };
 
   // ======================================================
@@ -1029,87 +1225,69 @@ function Reports() {
   };
 
   // ======================================================
-  // NORMAL REPORT TABLE
+  // NORMAL COLUMNS
   // ======================================================
 
-  const getNormalColumns = () => {
-    if (!reportData.length) {
-      return [];
-    }
-
-    return Object.keys(
-      reportData[0]
-    ).filter((key) => {
-      if (
-        isHiddenField(key)
-      ) {
-        return false;
-      }
-
-      if (
-        typeof reportData[0][
-          key
-        ] === "object"
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-  };
-
   const normalColumns =
-    getNormalColumns();
+    reportData.length
+      ? Object.keys(
+          reportData[0]
+        ).filter(
+          (key) =>
+            !isHiddenField(key) &&
+            typeof reportData[0][key] !==
+              "object"
+        )
+        : [];
 
   // ======================================================
   // JSX
   // ======================================================
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white">
+    <div className="min-h-screen overflow-x-hidden bg-slate-100">
 
-      {/* SIDEBAR */}
+      {/* ==================================================
+          SIDEBAR
+      ================================================== */}
 
       <div className="no-print">
-      <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       </div>
 
-      {/* MAIN */}
+      {/* ==================================================
+          MAIN
+      ================================================== */}
 
-     <div
-
-className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
-
-isSidebarOpen ? "ml-0 lg:ml-72" : "ml-0 lg:ml-20"
-
-}`}
-
->
+       <div
+        className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? "ml-0 lg:ml-72" : "ml-0 lg:ml-20"
+        }`}
+      >
 
         {/* NAVBAR */}
 
         <div className="no-print">
-         <Navbar
-
-isSidebarOpen={isSidebarOpen}
-
-setIsSidebarOpen={setIsSidebarOpen}
-
-/>
+          <Navbar
+          isSidebarOpen={isSidebarOpen}
+          setIsSidebarOpen={setIsSidebarOpen}
+        />
         </div>
 
         <main className="mx-auto mt-24 max-w-[1600px] space-y-6 p-4 md:p-6 lg:p-8">
 
-          {/* HEADER */}
+          {/* ==================================================
+              HEADER
+          ================================================== */}
 
           <div className="no-print flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
-              <h1 className="text-3xl font-bold text-black">
+              <h1 className="text-3xl font-bold text-slate-900">
                 Reports
               </h1>
 
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-slate-500">
                 View business reports.
               </p>
             </div>
@@ -1117,43 +1295,36 @@ setIsSidebarOpen={setIsSidebarOpen}
             <div className="flex gap-2">
 
               <button
-                onClick={
-                  handlePrint
-                }
-                className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-gray-700 hover:bg-white"
+                onClick={handlePrint}
+                className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50"
               >
-                <Printer
-                  size={18}
-                />
-
+                <Printer size={18} />
                 Print
               </button>
 
               <button
-                onClick={
-                  handleExport
-                }
+                onClick={handleExport}
                 className="flex items-center gap-2 rounded-xl bg-[#1E3A8A] px-5 py-3 font-semibold text-white hover:bg-[#17307A]"
               >
-                <Download
-                  size={18}
-                />
-
+                <Download size={18} />
                 Export
               </button>
 
             </div>
+
           </div>
 
-          {/* FILTER */}
+          {/* ==================================================
+              FILTER
+          ================================================== */}
 
-          <div className="no-print rounded-3xl border border-gray-300 bg-white p-6 shadow-sm">
+          <div className="no-print rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
 
-            <h2 className="text-xl font-bold text-black">
+            <h2 className="text-xl font-bold text-slate-900">
               Generate Report
             </h2>
 
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-slate-500">
               Select report and filters.
             </p>
 
@@ -1161,48 +1332,42 @@ setIsSidebarOpen={setIsSidebarOpen}
 
               {/* REPORT */}
 
-              <div className="lg:col-span-2">
-
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+              <div
+                className={
+                  activeReport === "labour"
+                    ? "lg:col-span-2"
+                    : "lg:col-span-2"
+                }
+              >
+                <label className="mb-2 block text-sm font-medium text-slate-700">
                   Report
                 </label>
 
                 <select
-                  value={
-                    activeReport
-                  }
+                  value={activeReport}
                   onChange={
                     handleReportChange
                   }
                   className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 outline-none focus:border-[#1E3A8A]"
                 >
-
                   <optgroup label="Sales">
-
                     <option value="sales_summary">
                       Sales Report
                     </option>
-
                   </optgroup>
 
                   <optgroup label="Stock">
-
                     <option value="stock_overall">
                       Stock Report
                     </option>
-
                   </optgroup>
 
                   <optgroup label="Labour">
-
                     <option value="labour">
                       Labour Report
                     </option>
-
                   </optgroup>
-
                 </select>
-
               </div>
 
               {/* SALES DATE */}
@@ -1211,8 +1376,7 @@ setIsSidebarOpen={setIsSidebarOpen}
                 "sales_summary" && (
                 <>
                   <div>
-
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
                       From Date
                     </label>
 
@@ -1229,12 +1393,10 @@ setIsSidebarOpen={setIsSidebarOpen}
                       }
                       className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4"
                     />
-
                   </div>
 
                   <div>
-
-                    <label className="mb-2 block text-sm font-medium text-gray-700">
+                    <label className="mb-2 block text-sm font-medium text-slate-700">
                       To Date
                     </label>
 
@@ -1251,7 +1413,6 @@ setIsSidebarOpen={setIsSidebarOpen}
                       }
                       className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4"
                     />
-
                   </div>
                 </>
               )}
@@ -1261,8 +1422,7 @@ setIsSidebarOpen={setIsSidebarOpen}
               {activeReport ===
                 "labour" && (
                 <div>
-
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
                     Worker
                   </label>
 
@@ -1278,7 +1438,6 @@ setIsSidebarOpen={setIsSidebarOpen}
                     }
                     className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4"
                   >
-
                     <option value="">
                       Select Worker
                     </option>
@@ -1299,9 +1458,7 @@ setIsSidebarOpen={setIsSidebarOpen}
                         </option>
                       )
                     )}
-
                   </select>
-
                 </div>
               )}
 
@@ -1310,8 +1467,7 @@ setIsSidebarOpen={setIsSidebarOpen}
               {activeReport ===
                 "labour" && (
                 <div>
-
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
                     Month
                   </label>
 
@@ -1327,7 +1483,6 @@ setIsSidebarOpen={setIsSidebarOpen}
                     }
                     className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4"
                   >
-
                     {Array.from(
                       {
                         length: 12,
@@ -1342,7 +1497,9 @@ setIsSidebarOpen={setIsSidebarOpen}
                           }
                         >
                           {new Date(
-                            2026,
+                            Number(
+                              filters.year
+                            ),
                             index,
                             1
                           ).toLocaleString(
@@ -1355,9 +1512,7 @@ setIsSidebarOpen={setIsSidebarOpen}
                         </option>
                       )
                     )}
-
                   </select>
-
                 </div>
               )}
 
@@ -1366,8 +1521,7 @@ setIsSidebarOpen={setIsSidebarOpen}
               {activeReport ===
                 "labour" && (
                 <div>
-
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
                     Year
                   </label>
 
@@ -1384,7 +1538,6 @@ setIsSidebarOpen={setIsSidebarOpen}
                     }
                     className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4"
                   />
-
                 </div>
               )}
 
@@ -1395,9 +1548,7 @@ setIsSidebarOpen={setIsSidebarOpen}
             <div className="mt-6 flex justify-end">
 
               <button
-                onClick={
-                  runReport
-                }
+                onClick={runReport}
                 disabled={
                   loading ||
                   (
@@ -1406,7 +1557,7 @@ setIsSidebarOpen={setIsSidebarOpen}
                     !filters.worker
                   )
                 }
-                className="flex h-12 items-center gap-2 rounded-xl bg-[#1E3A8A] px-7 font-semibold text-white hover:bg-[#1E3A8A] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex h-12 items-center gap-2 rounded-xl bg-[#1E3A8A] px-7 font-semibold text-white hover:bg-[#17307A] disabled:cursor-not-allowed disabled:opacity-50"
               >
 
                 {loading ? (
@@ -1420,9 +1571,7 @@ setIsSidebarOpen={setIsSidebarOpen}
                   </>
                 ) : (
                   <>
-                    <FileText
-                      size={18}
-                    />
+                    <FileText size={18} />
 
                     Run Report
                   </>
@@ -1438,286 +1587,439 @@ setIsSidebarOpen={setIsSidebarOpen}
               LABOUR REPORT
           ================================================== */}
 
-          {activeReport ===
-            "labour" &&
-            labourReport && (
-              <div
-                id="printable-report"
-                className="rounded-3xl border border-gray-300 bg-white p-6 shadow-sm"
-              >
+        {activeReport === "labour" && labourReport && (
+  <div
+    id="printable-report"
+    className="rounded-3xl border border-slate-200 bg-white shadow-sm"
+  >
+    {/* =====================================================
+        PRINT ONLY HEADER
+    ===================================================== */}
 
-                {/* WORKER HEADER */}
+    <div className="print-only print-header">
+      <h1 className="print-company-name">
+        LABOUR MANAGEMENT SYSTEM
+      </h1>
 
-                <div className="border-b border-gray-300 pb-5">
+      <p className="print-report-title">
+        LABOUR ATTENDANCE & PAYMENT REPORT
+      </p>
 
-                  <h2 className="text-2xl font-bold text-black">
-                    Labour Report
-                  </h2>
+      <div className="print-info-grid">
+        <div>
+          <span>Worker Name</span>
+          <strong>
+            {labourReport.worker?.name ||
+              selectedWorker?.name ||
+              "Labour"}
+          </strong>
+        </div>
 
-                  <p className="mt-2 text-lg font-semibold text-black">
-                    {
-                      labourReport
-                        .worker
-                        ?.name ||
-                      selectedWorker
-                        ?.name
-                    }
-                  </p>
+        <div>
+          <span>Report Period</span>
+          <strong>
+            {monthName} {filters.year}
+          </strong>
+        </div>
 
-                  <p className="mt-1 text-sm text-gray-500">
-                    {monthName}{" "}
-                    {filters.year}
-                  </p>
+        <div>
+          <span>Daily Wage</span>
+          <strong>
+            {formatCurrency(
+              labourReport.wages?.dailyWage
+            )}
+          </strong>
+        </div>
 
-                </div>
+        <div>
+          <span>Report Date</span>
+          <strong>
+            {new Date().toLocaleDateString("en-GB")}
+          </strong>
+        </div>
+      </div>
+    </div>
 
-                {/* ATTENDANCE DETAIL */}
+    {/* =====================================================
+        SCREEN HEADER
+    ===================================================== */}
 
-                <div className="mt-8">
+    <div className="screen-only border-b border-slate-200 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#1E3A8A]">
+            Labour Report
+          </p>
 
-                  <h3 className="mb-4 text-lg font-bold text-black">
-                    Attendance
-                  </h3>
+          <h2 className="mt-1 text-2xl font-bold text-slate-900">
+            {labourReport.worker?.name ||
+              selectedWorker?.name ||
+              "Labour"}
+          </h2>
 
-                  <div className="overflow-x-auto rounded-2xl border border-gray-300">
+          <p className="mt-1 text-sm text-slate-500">
+            {monthName} {filters.year}
+          </p>
+        </div>
 
-                    <table className="w-full min-w-[500px]">
+        <div className="text-left sm:text-right">
+          <p className="text-xs uppercase tracking-wide text-slate-400">
+            Daily Wage
+          </p>
 
-                      <thead className="bg-white">
+          <p className="text-lg font-bold text-slate-900">
+            {formatCurrency(
+              labourReport.wages?.dailyWage
+            )}
+          </p>
+        </div>
+      </div>
+    </div>
 
-                        <tr>
+    {/* =====================================================
+        SCREEN SUMMARY
+    ===================================================== */}
 
-                          <th className="px-5 py-4 text-left text-xs font-semibold uppercase text-gray-500">
-                            Date
-                          </th>
+    <div className="screen-only grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
+      <div className="rounded-2xl bg-green-50 p-5">
+        <p className="text-sm font-medium text-green-700">
+          Present Days
+        </p>
 
-                          <th className="px-5 py-4 text-left text-xs font-semibold uppercase text-gray-500">
-                            Day
-                          </th>
+        <p className="mt-2 text-3xl font-bold text-green-700">
+          {labourReport.summary?.presentDays || 0}
+        </p>
+      </div>
 
-                          <th className="px-5 py-4 text-left text-xs font-semibold uppercase text-gray-500">
-                            Status
-                          </th>
+      <div className="rounded-2xl bg-red-50 p-5">
+        <p className="text-sm font-medium text-red-700">
+          Absent Days
+        </p>
 
-                        </tr>
+        <p className="mt-2 text-3xl font-bold text-red-700">
+          {labourReport.summary?.absentDays || 0}
+        </p>
+      </div>
 
-                      </thead>
+      <div className="rounded-2xl bg-orange-50 p-5">
+        <p className="text-sm font-medium text-orange-700">
+          Leave Days
+        </p>
 
-                      <tbody className="divide-y divide-slate-100">
+        <p className="mt-2 text-3xl font-bold text-orange-700">
+          {labourReport.summary?.leaveDays || 0}
+        </p>
+      </div>
+    </div>
 
-                        {(
-                          labourReport
-                            .attendance ||
-                          []
-                        ).map(
-                          (
-                            item,
-                            index
-                          ) => {
+    {/* =====================================================
+        PROFESSIONAL LEDGER TABLE
+    ===================================================== */}
 
-                            const rawDate =
-                              item.date ||
-                              item.attendanceDate ||
-                              item.attendance_date;
+    <div className="p-5 sm:p-6">
 
-                            const status =
-                              String(
-                                item.status ||
-                                  ""
-                              ).toLowerCase();
+      <div className="screen-only mb-4">
+        <h3 className="text-lg font-bold text-slate-900">
+          Attendance & Payment History
+        </h3>
 
-                            return (
-                              <tr
-                                key={
-                                  item._id ||
-                                  index
-                                }
-                              >
+        <p className="mt-1 text-xs text-slate-500">
+          Daily attendance, wages, payments and balance
+        </p>
+      </div>
 
-                                <td className="px-5 py-4 text-sm text-gray-700">
-                                  {formatDate(
-                                    rawDate
-                                  )}
-                                </td>
+      <div className="overflow-x-auto">
+        <table className="labour-print-table w-full min-w-[850px]">
 
-                                <td className="px-5 py-4 text-sm text-gray-700">
-                                  {getDayName(
-                                    rawDate
-                                  )}
-                                </td>
+          <thead>
+            <tr>
 
-                                <td
-                                  className={`px-5 py-4 text-sm font-semibold ${
-                                    status ===
-                                    "present"
-                                      ? "text-black"
-                                      : status ===
-                                        "absent"
-                                      ? "text-black"
-                                      : "text-black"
-                                  }`}
-                                >
-                                  {status
-                                    ? status
-                                        .charAt(
-                                          0
-                                        )
-                                        .toUpperCase() +
-                                      status.slice(
-                                        1
-                                      )
-                                    : ""}
-                                </td>
+              <th className="w-[55px] ">
+                #
+              </th>
 
-                              </tr>
-                            );
-                          }
+              <th>
+                Date
+              </th>
+
+              <th>
+                Day
+              </th>
+
+              <th className="text-center">
+                Present
+              </th>
+
+              <th className="text-center">
+                Absent
+              </th>
+
+              <th className="text-right">
+                Amount
+              </th>
+
+              <th className="text-right">
+                Payment
+              </th>
+
+              <th className="text-right">
+                Balance
+              </th>
+
+            </tr>
+          </thead>
+
+          <tbody>
+            {(labourReport.ledger || []).length === 0 ? (
+              <tr>
+                <td
+                  colSpan="8"
+                  className="py-12 text-center text-sm text-slate-400"
+                >
+                  No attendance or payment records found.
+                </td>
+              </tr>
+            ) : (
+              (labourReport.ledger || []).map(
+                (row, index) => {
+
+                  const status = String(
+                    row?.attendance?.status || ""
+                  ).toLowerCase();
+
+                  const present =
+                    status === "present";
+
+                  const absent =
+                    status === "absent";
+
+                  const leave =
+                    status === "leave";
+
+                  return (
+                    <tr
+                      key={`${row.date}-${index}`}
+                    >
+
+                      <td className="text-center">
+                        {index + 1}
+                      </td>
+
+                      <td className="font-semibold">
+                        {formatDate(row.date)}
+                      </td>
+
+                      <td>
+                        {getDayName(row.date)}
+                      </td>
+
+                      <td className="text-center">
+
+                        {present ? (
+                          <span className="attendance-mark">
+                            ✓
+                          </span>
+                        ) : (
+                          "—"
                         )}
 
-                      </tbody>
+                      </td>
 
-                    </table>
+                      <td className="text-center">
 
-                  </div>
+                        {absent ? (
+                          <span className="attendance-mark">
+                            ×
+                          </span>
+                        ) : leave ? (
+                          <span className="leave-print">
+                            Leave
+                          </span>
+                        ) : (
+                          "—"
+                        )}
 
-                </div>
+                      </td>
 
-                {/* WAGES / PAYMENTS / BALANCE */}
+                      <td className="text-right">
+                        {Number(row.earned || 0) > 0
+                          ? formatCurrency(row.earned)
+                          : "—"}
+                      </td>
 
-                <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+                      <td className="text-right font-semibold">
+                        {Number(row.paid || 0) > 0
+                          ? formatCurrency(row.paid)
+                          : "—"}
+                      </td>
 
-                  {/* WAGES */}
+                      <td className="text-right font-bold">
+                        {formatCurrency(
+                          row.runningBalance || 0
+                        )}
+                      </td>
 
-                  <div className="rounded-2xl border border-gray-300 p-5">
-
-                    <h3 className="font-bold text-black">
-                      Wages
-                    </h3>
-
-                    <div className="mt-4 space-y-3">
-
-                      <div className="flex justify-between">
-
-                        <span className="text-sm text-gray-500">
-                          Daily Wage
-                        </span>
-
-                        <span className="font-semibold">
-                          {formatCurrency(
-                            labourReport
-                              .wages
-                              .dailyWage
-                          )}
-                        </span>
-
-                      </div>
-
-                      <div className="flex justify-between border-t pt-3">
-
-                        <span className="text-sm font-medium">
-                          Total Wages
-                        </span>
-
-                        <span className="font-bold">
-                          {formatCurrency(
-                            labourReport
-                              .wages
-                              .totalWages
-                          )}
-                        </span>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  {/* PAYMENTS */}
-
-                  <div className="rounded-2xl border border-gray-300 p-5">
-
-                    <h3 className="font-bold text-black">
-                      Payments
-                    </h3>
-
-                    <div className="mt-4 space-y-3">
-
-                      <div className="flex justify-between">
-
-                        <span className="text-sm text-gray-500">
-                          Salary Paid
-                        </span>
-
-                        <span className="font-semibold">
-                          {formatCurrency(
-                            labourReport
-                              .payments
-                              .salaryPaid
-                          )}
-                        </span>
-
-                      </div>
-
-                      <div className="flex justify-between">
-
-                        <span className="text-sm text-gray-500">
-                          Advance Paid
-                        </span>
-
-                        <span className="font-semibold">
-                          {formatCurrency(
-                            labourReport
-                              .payments
-                              .advancePaid
-                          )}
-                        </span>
-
-                      </div>
-
-                      <div className="flex justify-between border-t pt-3">
-
-                        <span className="font-medium">
-                          Total Paid
-                        </span>
-
-                        <span className="font-bold text-black">
-                          {formatCurrency(
-                            labourReport
-                              .payments
-                              .totalPaid
-                          )}
-                        </span>
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  {/* BALANCE */}
-
-                  <div className="rounded-2xl bg-white p-5">
-
-                    <h3 className="font-bold text-black">
-                      Balance
-                    </h3>
-
-                    <p className="mt-5 text-sm text-black">
-                      Remaining Balance
-                    </p>
-
-                    <p className="mt-2 text-3xl font-bold text-black">
-                      {formatCurrency(
-                        labourReport.balance
-                      )}
-                    </p>
-
-                  </div>
-
-                </div>
-
-              </div>
+                    </tr>
+                  );
+                }
+              )
             )}
+          </tbody>
+
+        </table>
+      </div>
+
+      {/* =====================================================
+          TOTALS
+      ===================================================== */}
+
+     <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+
+  <div className="summary-box">
+    <span>
+      Total Wages
+    </span>
+
+    <strong>
+      {formatCurrency(
+        labourReport.wages?.totalWages
+      )}
+    </strong>
+  </div>
+
+  <div className="summary-box">
+    <span>
+      Total Paid
+    </span>
+
+    <strong>
+      {formatCurrency(
+        labourReport.paymentSummary?.totalPaid ??
+        labourReport.payments?.totalPaid
+      )}
+    </strong>
+  </div>
+
+  <div className="summary-box balance-box">
+    <span>
+      Remaining Balance
+    </span>
+
+    <strong>
+      {formatCurrency(
+        labourReport.balance
+      )}
+    </strong>
+  </div>
+
+</div>
+
+      {/* =====================================================
+          PRINT TOTALS
+      ===================================================== */}
+
+      <div className="print-only print-total-section">
+
+        <div className="print-total-row">
+          <span>
+            Total Present Days
+          </span>
+
+          <strong>
+            {labourReport.summary?.presentDays || 0}
+          </strong>
+        </div>
+
+        <div className="print-total-row">
+          <span>
+            Total Absent Days
+          </span>
+
+          <strong>
+            {labourReport.summary?.absentDays || 0}
+          </strong>
+        </div>
+
+        <div className="print-total-row">
+          <span>
+            Total Leave Days
+          </span>
+
+          <strong>
+            {labourReport.summary?.leaveDays || 0}
+          </strong>
+        </div>
+
+        <div className="print-total-row">
+          <span>
+            Daily Wage
+          </span>
+
+          <strong>
+            {formatCurrency(
+              labourReport.wages?.dailyWage
+            )}
+          </strong>
+        </div>
+
+        <div className="print-total-row">
+          <span>
+            Total Wages
+          </span>
+
+          <strong>
+            {formatCurrency(
+              labourReport.wages?.totalWages
+            )}
+          </strong>
+        </div>
+
+        <div className="print-total-row">
+          <span>
+            Total Payments
+          </span>
+
+          <strong>
+            {formatCurrency(
+              labourReport.paymentSummary?.totalPaid ??
+              labourReport.payments?.totalPaid
+            )}
+          </strong>
+        </div>
+
+        <div className="print-total-row print-final-balance">
+          <span>
+            Remaining Balance
+          </span>
+
+          <strong>
+            {formatCurrency(
+              labourReport.balance
+            )}
+          </strong>
+        </div>
+
+      </div>
+
+      {/* =====================================================
+          PRINT FOOTER
+      ===================================================== */}
+
+      <div className="print-only print-footer">
+        <span>
+          Labour Attendance & Payment Report
+        </span>
+
+        <span>
+          Generated on{" "}
+          {new Date().toLocaleDateString("en-GB")}
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+)}
 
           {/* ==================================================
               NORMAL SALES / STOCK REPORT
@@ -1727,7 +2029,7 @@ setIsSidebarOpen={setIsSidebarOpen}
             "labour" && (
             <div
               id="printable-report"
-              className="overflow-hidden rounded-3xl border border-gray-300 bg-white shadow-sm"
+              className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm"
             >
 
               {loading && (
@@ -1735,10 +2037,10 @@ setIsSidebarOpen={setIsSidebarOpen}
 
                   <Loader2
                     size={35}
-                    className="animate-spin text-black"
+                    className="animate-spin text-[#1E3A8A]"
                   />
 
-                  <p className="mt-3 text-sm text-gray-500">
+                  <p className="mt-3 text-sm text-slate-500">
                     Loading report...
                   </p>
 
@@ -1755,11 +2057,11 @@ setIsSidebarOpen={setIsSidebarOpen}
                       className="text-slate-300"
                     />
 
-                    <h3 className="mt-3 font-semibold text-gray-700">
+                    <h3 className="mt-3 font-semibold text-slate-700">
                       No records found
                     </h3>
 
-                    <p className="mt-1 text-sm text-gray-400">
+                    <p className="mt-1 text-sm text-slate-400">
                       Select filters and
                       run the report.
                     </p>
@@ -1776,7 +2078,7 @@ setIsSidebarOpen={setIsSidebarOpen}
 
                       <thead>
 
-                        <tr className="border-b border-gray-300 bg-white">
+                        <tr className="border-b border-slate-200 bg-slate-50">
 
                           {normalColumns.map(
                             (column) => (
@@ -1784,7 +2086,7 @@ setIsSidebarOpen={setIsSidebarOpen}
                                 key={
                                   column
                                 }
-                                className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                                className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
                               >
                                 {formatColumnName(
                                   column
@@ -1809,7 +2111,7 @@ setIsSidebarOpen={setIsSidebarOpen}
                                 row._id ||
                                 index
                               }
-                              className="border-b border-gray-200 hover:bg-white"
+                              className="border-b border-slate-100 hover:bg-slate-50"
                             >
 
                               {normalColumns.map(
@@ -1831,10 +2133,11 @@ setIsSidebarOpen={setIsSidebarOpen}
                                         isMoneyField(
                                           column
                                         )
-                                          ? "font-semibold text-black"
-                                          : "text-gray-700"
+                                          ? "font-semibold text-slate-800"
+                                          : "text-slate-700"
                                       }`}
                                     >
+
                                       {isMoneyField(
                                         column
                                       )
@@ -1845,6 +2148,7 @@ setIsSidebarOpen={setIsSidebarOpen}
                                             value ??
                                               ""
                                           )}
+
                                     </td>
                                   );
                                 }
@@ -1865,6 +2169,7 @@ setIsSidebarOpen={setIsSidebarOpen}
           )}
 
         </main>
+
       </div>
 
       {/* ==================================================
@@ -1872,51 +2177,503 @@ setIsSidebarOpen={setIsSidebarOpen}
       ================================================== */}
 
       <style>{`
-        @media print {
+  /* =====================================================
+     LABOUR SCREEN SUMMARY
+  ===================================================== */
+.labour-print-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #cbd5e1;
+}
 
-          body {
-            background: white !important;
-          }
+.labour-print-table th,
+.labour-print-table td {
+  border: 1px solid #cbd5e1;
+  padding: 10px 8px;
+}
 
-          body * {
-            visibility: hidden;
-          }
+.labour-print-table th {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #0f172a;
+}
 
-          #printable-report,
-          #printable-report * {
-            visibility: visible;
-          }
+.labour-print-table tbody tr:hover {
+  background: #f8fafc;
+}
+  .summary-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
-          #printable-report {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            border: none !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-          }
+    min-height: 82px;
 
-          .no-print {
-            display: none !important;
-          }
+    padding: 18px 20px;
 
-          table {
-            width: 100% !important;
-          }
+    border: 1px solid #e2e8f0;
 
-          th,
-          td {
-            padding: 10px 12px !important;
-            border-bottom: 1px solid #ddd;
-          }
+    border-radius: 14px;
 
-          @page {
-            size: A4 portrait;
-            margin: 15mm;
-          }
-        }
-      `}</style>
+    background: #ffffff;
+
+    gap: 20px;
+  }
+
+  .summary-box span {
+    font-size: 14px;
+
+    font-weight: 500;
+
+    color: #64748b;
+
+    white-space: nowrap;
+  }
+
+  .summary-box strong {
+    font-size: 18px;
+
+    font-weight: 700;
+
+    color: #0f172a;
+
+    white-space: nowrap;
+
+    text-align: right;
+  }
+
+  .balance-box {
+    background: #f8fafc;
+
+    border-color: #cbd5e1;
+  }
+
+  .balance-box span {
+    color: #475569;
+
+    font-weight: 600;
+  }
+
+  .balance-box strong {
+    font-size: 19px;
+
+    color: #1e3a8a;
+  }
+
+  @media (max-width: 767px) {
+
+    .summary-box {
+      min-height: 72px;
+
+      padding: 15px 16px;
+    }
+
+    .summary-box strong {
+      font-size: 16px;
+    }
+
+  }
+
+  /* =====================================================
+     PRINT MUST STAY EXACTLY AS BEFORE
+  ===================================================== */
+
+  @media print {
+
+    .summary-box,
+    .balance-box {
+      display: none !important;
+    }
+
+  }
+  /* =====================================================
+     SCREEN ONLY
+  ===================================================== */
+
+  .print-only {
+    display: none;
+  }
+
+  /* =====================================================
+     PRINT
+  ===================================================== */
+
+  @media print {
+
+    @page {
+      size: A4 portrait;
+      margin: 12mm;
+    }
+
+    html,
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+
+      background: #fff !important;
+      color: #000 !important;
+
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif !important;
+
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* Hide complete application */
+
+    body * {
+      visibility: hidden !important;
+    }
+
+    /* Show report only */
+
+    #printable-report,
+    #printable-report * {
+      visibility: visible !important;
+    }
+
+    #printable-report {
+      position: absolute !important;
+
+      top: 0 !important;
+      left: 0 !important;
+
+      width: 100% !important;
+
+      margin: 0 !important;
+      padding: 0 !important;
+
+      background: #fff !important;
+
+      border: none !important;
+      border-radius: 0 !important;
+
+      box-shadow: none !important;
+
+      color: #000 !important;
+    }
+
+    /* Hide screen UI */
+
+    .screen-only,
+    .no-print {
+      display: none !important;
+    }
+
+    .print-only {
+      display: block !important;
+    }
+
+    /* =================================================
+       PRINT HEADER
+    ================================================= */
+
+    .print-header {
+      display: block !important;
+
+      margin-bottom: 18px !important;
+
+      padding-bottom: 12px !important;
+
+      border-bottom: 2px solid #000 !important;
+    }
+
+    .print-company-name {
+      margin: 0 !important;
+
+      text-align: center !important;
+
+      font-size: 20px !important;
+
+      line-height: 1.3 !important;
+
+      font-weight: 700 !important;
+
+      letter-spacing: 0.5px !important;
+
+      color: #000 !important;
+    }
+
+    .print-report-title {
+      margin: 4px 0 0 !important;
+
+      text-align: center !important;
+
+      font-size: 13px !important;
+
+      line-height: 1.3 !important;
+
+      font-weight: 700 !important;
+
+      text-transform: uppercase !important;
+
+      letter-spacing: 1px !important;
+
+      color: #000 !important;
+    }
+
+    .print-info-grid {
+      display: grid !important;
+
+      grid-template-columns: 1fr 1fr !important;
+
+      gap: 7px 25px !important;
+
+      margin-top: 15px !important;
+    }
+
+    .print-info-grid > div {
+      display: flex !important;
+
+      justify-content: space-between !important;
+
+      gap: 15px !important;
+
+      padding-bottom: 4px !important;
+
+      border-bottom: 1px solid #999 !important;
+
+      font-size: 10px !important;
+
+      color: #000 !important;
+    }
+
+    .print-info-grid span {
+      font-weight: 400 !important;
+      color: #000 !important;
+    }
+
+    .print-info-grid strong {
+      font-weight: 700 !important;
+      color: #000 !important;
+      text-align: right !important;
+    }
+
+    /* =================================================
+       TABLE
+    ================================================= */
+
+    .labour-print-table {
+      width: 100% !important;
+
+      min-width: 0 !important;
+
+      border-collapse: collapse !important;
+
+      border-spacing: 0 !important;
+
+      table-layout: fixed !important;
+
+      font-size: 9.5px !important;
+
+      color: #000 !important;
+    }
+
+    .labour-print-table thead {
+      display: table-header-group !important;
+    }
+
+    .labour-print-table tbody {
+      display: table-row-group !important;
+    }
+
+    .labour-print-table tr {
+      page-break-inside: avoid !important;
+
+      break-inside: avoid !important;
+    }
+
+    .labour-print-table th {
+      padding: 7px 5px !important;
+
+      border: 1px solid #000 !important;
+
+      background: #fff !important;
+
+      color: #000 !important;
+
+      font-size: 8.5px !important;
+
+      font-weight: 700 !important;
+
+      text-align: center !important;
+
+      text-transform: uppercase !important;
+
+      letter-spacing: 0.2px !important;
+    }
+
+    .labour-print-table td {
+      padding: 6px 5px !important;
+
+      border: 1px solid #555 !important;
+
+      background: #fff !important;
+
+      color: #000 !important;
+
+      font-size: 9.5px !important;
+
+      vertical-align: middle !important;
+    }
+
+    .labour-print-table th:nth-child(1),
+    .labour-print-table td:nth-child(1) {
+      width: 6% !important;
+      text-align: center !important;
+    }
+
+    .labour-print-table th:nth-child(2),
+    .labour-print-table td:nth-child(2) {
+      width: 14% !important;
+    }
+
+    .labour-print-table th:nth-child(3),
+    .labour-print-table td:nth-child(3) {
+      width: 15% !important;
+    }
+
+    .labour-print-table th:nth-child(4),
+    .labour-print-table td:nth-child(4) {
+      width: 10% !important;
+    }
+
+    .labour-print-table th:nth-child(5),
+    .labour-print-table td:nth-child(5) {
+      width: 10% !important;
+    }
+
+    .labour-print-table th:nth-child(6),
+    .labour-print-table td:nth-child(6) {
+      width: 15% !important;
+      text-align: right !important;
+    }
+
+    .labour-print-table th:nth-child(7),
+    .labour-print-table td:nth-child(7) {
+      width: 15% !important;
+      text-align: right !important;
+    }
+
+    .labour-print-table th:nth-child(8),
+    .labour-print-table td:nth-child(8) {
+      width: 15% !important;
+      text-align: right !important;
+    }
+
+    .attendance-mark {
+      font-size: 13px !important;
+
+      font-weight: 700 !important;
+
+      color: #000 !important;
+    }
+
+    .leave-print {
+      font-weight: 700 !important;
+
+      color: #000 !important;
+    }
+
+    /* =================================================
+       PRINT TOTALS
+    ================================================= */
+
+    .print-total-section {
+      display: block !important;
+
+      width: 48% !important;
+
+      margin-top: 15px !important;
+
+      margin-left: auto !important;
+
+      border: 1px solid #000 !important;
+    }
+
+    .print-total-row {
+      display: flex !important;
+
+      justify-content: space-between !important;
+
+      padding: 6px 9px !important;
+
+      border-bottom: 1px solid #999 !important;
+
+      font-size: 10px !important;
+
+      color: #000 !important;
+    }
+
+    .print-total-row:last-child {
+      border-bottom: none !important;
+    }
+
+    .print-total-row span {
+      color: #000 !important;
+    }
+
+    .print-total-row strong {
+      color: #000 !important;
+
+      font-weight: 700 !important;
+    }
+
+    .print-final-balance {
+      border-top: 2px solid #000 !important;
+
+      font-size: 11px !important;
+
+      font-weight: 700 !important;
+    }
+
+    /* =================================================
+       FOOTER
+    ================================================= */
+
+    .print-footer {
+      display: flex !important;
+
+      justify-content: space-between !important;
+
+      margin-top: 25px !important;
+
+      padding-top: 7px !important;
+
+      border-top: 1px solid #000 !important;
+
+      font-size: 8px !important;
+
+      color: #000 !important;
+    }
+
+    /* Remove all screen decoration */
+
+    #printable-report .rounded-3xl,
+    #printable-report .rounded-2xl,
+    #printable-report .rounded-xl {
+      border-radius: 0 !important;
+    }
+
+    #printable-report .shadow-sm {
+      box-shadow: none !important;
+    }
+
+    /* Prevent weird page breaks */
+
+    .labour-print-table,
+    .print-total-section,
+    .print-footer {
+      page-break-inside: avoid !important;
+
+      break-inside: avoid !important;
+    }
+
+  }
+
+`}</style>
 
     </div>
   );

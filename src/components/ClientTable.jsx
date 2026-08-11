@@ -8,12 +8,24 @@ function ClientTable({
   onDelete,
 }) {
   const filteredClients = clients.filter((client) =>
-client.clientName.toLowerCase().includes(search.toLowerCase())
+    String(client?.clientName || "")
+      .toLowerCase()
+      .includes(String(search || "").toLowerCase())
   );
+
+  const formatCurrency = (value) => {
+    const amount = Number(value);
+
+    if (!Number.isFinite(amount)) {
+      return "Rs. 0";
+    }
+
+    return `Rs. ${amount.toLocaleString("en-PK")}`;
+  };
 
   if (filteredClients.length === 0) {
     return (
-      <div className="rounded-3xl bg-white p-10 text-center shadow-sm border border-slate-200">
+      <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
         No clients found.
       </div>
     );
@@ -24,57 +36,53 @@ client.clientName.toLowerCase().includes(search.toLowerCase())
       {/* ================= Desktop Table ================= */}
 
       <div className="hidden lg:block">
-  <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
-    <div className="min-w-[900px]">
+        <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="min-w-[900px]">
 
             <div className="grid grid-cols-12 bg-slate-50 px-6 py-4 font-semibold text-slate-700">
-
               <div className="col-span-3">Client</div>
-
               <div className="col-span-2">Phone</div>
-
               <div className="col-span-2">Outstanding</div>
-
               <div className="col-span-2">Purchases</div>
-
               <div className="col-span-1">Status</div>
-
               <div className="col-span-2 text-center">
                 Actions
               </div>
-
             </div>
 
             {filteredClients.map((client) => (
-
               <div
                 key={client._id}
-                className="grid grid-cols-12 items-center border-t border-slate-100 px-6 py-5 hover:bg-slate-50"
+                className="grid grid-cols-12 items-center border-t border-slate-100 px-6 py-5 transition hover:bg-slate-50"
               >
 
+                {/* Client */}
                 <div className="col-span-3 font-semibold">
-                 <Link
- to={`/client-profile/${client._id}`}
-  className="text-[#1E3A8A] hover:underline"
->
-  {client.clientName}
-</Link>
+                  <Link
+                    to={`/client-profile/${client._id}`}
+                    className="text-[#1E3A8A] hover:underline"
+                  >
+                    {client.clientName || "Unknown Client"}
+                  </Link>
                 </div>
 
+                {/* Phone */}
                 <div className="col-span-2">
-                  {client.phoneNumber}
+                  {client.phoneNumber || "-"}
                 </div>
 
+                {/* Outstanding */}
                 <div className="col-span-2 font-semibold text-red-600">
-                  Rs. {client.outstandingBalance || 0}
+                  {formatCurrency(client.outstandingBalance)}
                 </div>
 
-                <div className="col-span-2 font-semibold">
-                  Rs. {client.totalPurchases || 0}
+                {/* Purchases */}
+                <div className="col-span-2 font-semibold text-slate-800">
+                  {formatCurrency(client.totalPurchases)}
                 </div>
 
+                {/* Status */}
                 <div className="col-span-1">
-
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-medium ${
                       client.status === "active"
@@ -82,31 +90,30 @@ client.clientName.toLowerCase().includes(search.toLowerCase())
                         : "bg-red-100 text-red-700"
                     }`}
                   >
-                    {client.status}
+                    {client.status || "inactive"}
                   </span>
-
                 </div>
 
+                {/* Actions */}
                 <div className="col-span-2 flex justify-center gap-3">
-
                   <button
+                    type="button"
                     onClick={() => onEdit(client)}
-                    className="rounded-xl bg-blue-50 p-2 text-blue-600 hover:bg-blue-100"
+                    className="rounded-xl bg-blue-50 p-2 text-blue-600 transition hover:bg-blue-100"
                   >
                     <Pencil size={18} />
                   </button>
 
                   <button
+                    type="button"
                     onClick={() => onDelete(client._id)}
-                    className="rounded-xl bg-red-50 p-2 text-red-600 hover:bg-red-100"
+                    className="rounded-xl bg-red-50 p-2 text-red-600 transition hover:bg-red-100"
                   >
                     <Trash2 size={18} />
                   </button>
-
                 </div>
 
               </div>
-
             ))}
 
           </div>
@@ -118,7 +125,6 @@ client.clientName.toLowerCase().includes(search.toLowerCase())
       <div className="grid gap-4 lg:hidden">
 
         {filteredClients.map((client) => (
-
           <div
             key={client._id}
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
@@ -127,18 +133,16 @@ client.clientName.toLowerCase().includes(search.toLowerCase())
             <div className="flex items-start justify-between">
 
               <div>
-
-        <Link
-  to={`/client-profile/${client._id}`}
-  className="text-lg font-bold text-[#1E3A8A] hover:underline"
->
-  {client.clientName}
-</Link>
+                <Link
+                  to={`/client-profile/${client._id}`}
+                  className="text-lg font-bold text-[#1E3A8A] hover:underline"
+                >
+                  {client.clientName || "Unknown Client"}
+                </Link>
 
                 <p className="mt-1 text-sm text-slate-500">
-                 {client.phoneNumber}
+                  {client.phoneNumber || "-"}
                 </p>
-
               </div>
 
               <span
@@ -148,30 +152,32 @@ client.clientName.toLowerCase().includes(search.toLowerCase())
                     : "bg-red-100 text-red-700"
                 }`}
               >
-                {client.status}
+                {client.status || "inactive"}
               </span>
 
             </div>
 
-            <div className="mt-5 space-y-2 text-sm">
+            <div className="mt-5 space-y-3 text-sm">
 
+              {/* Outstanding */}
               <div className="flex justify-between">
                 <span className="text-slate-500">
                   Outstanding
                 </span>
 
                 <span className="font-semibold text-red-600">
-                  Rs. {client.outstandingBalance || 0}
+                  {formatCurrency(client.outstandingBalance)}
                 </span>
               </div>
 
+              {/* Purchases */}
               <div className="flex justify-between">
                 <span className="text-slate-500">
                   Purchases
                 </span>
 
-                <span className="font-semibold">
-                  Rs. {client.totalPurchases || 0}
+                <span className="font-semibold text-slate-800">
+                  {formatCurrency(client.totalPurchases)}
                 </span>
               </div>
 
@@ -180,15 +186,17 @@ client.clientName.toLowerCase().includes(search.toLowerCase())
             <div className="mt-6 flex gap-3">
 
               <button
+                type="button"
                 onClick={() => onEdit(client)}
-                className="flex-1 rounded-xl bg-blue-600 py-2 text-white hover:bg-blue-700"
+                className="flex-1 rounded-xl bg-blue-600 py-2 text-white transition hover:bg-blue-700"
               >
                 Edit
               </button>
 
               <button
+                type="button"
                 onClick={() => onDelete(client._id)}
-                className="flex-1 rounded-xl bg-red-600 py-2 text-white hover:bg-red-700"
+                className="flex-1 rounded-xl bg-red-600 py-2 text-white transition hover:bg-red-700"
               >
                 Delete
               </button>
@@ -196,7 +204,6 @@ client.clientName.toLowerCase().includes(search.toLowerCase())
             </div>
 
           </div>
-
         ))}
 
       </div>
