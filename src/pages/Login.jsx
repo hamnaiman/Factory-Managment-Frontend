@@ -10,198 +10,226 @@ import { loginSuccess, setLoading } from "../redux/authSlice";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
-    const {
-  register,
-  handleSubmit,
-  formState: { errors },
-} = useForm({
-  resolver: zodResolver(loginSchema),
-});
-const dispatch = useDispatch();
-const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(loginSchema),
+  });
 
-const onSubmit = async (data) => {
-  try {
-    dispatch(setLoading(true));
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-    const response = await loginUser(data);
+  const onSubmit = async (data) => {
+    try {
+      dispatch(setLoading(true));
 
-    dispatch(loginSuccess(response.data.data.user));
+      const response = await loginUser(data);
 
-    toast.success(response.data.message);
+      dispatch(loginSuccess(response.data.data.user));
 
-    navigate("/dashboard");
+      toast.success(response.data.message);
 
-  } catch (error) {
-
-    toast.error(
-      error.response?.data?.message || "Login failed"
-    );
-
-  } finally {
-
-    dispatch(setLoading(false));
-
-  }
-};
+      navigate("/dashboard");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || "Login failed"
+      );
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
 
   return (
-    
-    <div className="h-screen w-full flex overflow-hidden bg-slate-100">
+    <div className="min-h-screen w-full bg-slate-100 flex overflow-x-hidden">
 
-      {/* LEFT SIDE */}
-      <div className="hidden lg:flex w-1/2 h-full bg-[#1E3A8A] text-white relative">
+      {/* =====================================================
+          LEFT SIDE - DESKTOP ONLY
+      ====================================================== */}
+      <div className="hidden lg:flex lg:w-1/2 min-h-screen bg-[#1E3A8A] text-white relative overflow-hidden">
 
-        <div className="flex flex-col justify-center px-16 w-full z-10">
+        <div className="relative z-10 flex min-h-screen w-full flex-col justify-center px-10 xl:px-16 2xl:px-20">
 
-          <h1 className="text-5xl font-bold leading-tight">
-            Factory
-            <br />
-            Management
-            <br />
-            System
-          </h1>
+          <div className="max-w-xl">
 
-          <p className="mt-8 text-lg text-blue-100 leading-8 max-w-lg">
-            Manage products, stock, production, sales, labour and reports
-            from one secure dashboard.
-          </p>
+            <h1 className="text-4xl xl:text-5xl 2xl:text-6xl font-bold leading-[1.08]">
+              Factory
+              <br />
+              Management
+              <br />
+              System
+            </h1>
 
-          <div className="mt-12 flex gap-4">
+            <p className="mt-6 xl:mt-8 max-w-lg text-base xl:text-lg leading-7 xl:leading-8 text-blue-100">
+              Manage products, stock, production, sales, labour
+              and reports from one secure dashboard.
+            </p>
 
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl px-6 py-5 border border-white/10">
-              <h3 className="font-semibold text-lg">Products</h3>
-              <p className="text-sm text-blue-100 mt-1">
-                Manage products & stock
-              </p>
-            </div>
+            <div className="mt-8 xl:mt-12 flex flex-wrap gap-3 xl:gap-4">
 
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl px-6 py-5 border border-white/10">
-              <h3 className="font-semibold text-lg">Sales</h3>
-              <p className="text-sm text-blue-100 mt-1">
-                Billing & reports
-              </p>
+              <div className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur-md xl:px-6 xl:py-5">
+                <h3 className="text-base xl:text-lg font-semibold">
+                  Products
+                </h3>
+
+                <p className="mt-1 text-xs xl:text-sm text-blue-100">
+                  Manage products & stock
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/10 px-5 py-4 backdrop-blur-md xl:px-6 xl:py-5">
+                <h3 className="text-base xl:text-lg font-semibold">
+                  Sales
+                </h3>
+
+                <p className="mt-1 text-xs xl:text-sm text-blue-100">
+                  Billing & reports
+                </p>
+              </div>
+
             </div>
 
           </div>
-
         </div>
 
-        {/* Decorative Circle */}
+        {/* Decorative circles */}
+        <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-blue-400/20 xl:h-96 xl:w-96" />
 
-        <div className="absolute -bottom-36 -left-36 h-96 w-96 rounded-full bg-blue-400/20"></div>
+        <div className="absolute -right-32 -top-32 h-72 w-72 rounded-full bg-blue-300/10 xl:h-96 xl:w-96" />
 
       </div>
 
-      {/* RIGHT SIDE */}
 
-      <div className="flex w-full lg:w-1/2 h-full items-center justify-center px-8">
+      {/* =====================================================
+          RIGHT SIDE
+      ====================================================== */}
+      <div className="flex min-h-screen w-full items-center justify-center px-4 py-6 sm:px-6 sm:py-8 md:px-8 lg:w-1/2 lg:px-10 xl:px-12">
 
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 p-10">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-xl sm:rounded-3xl sm:px-8 sm:py-8 md:px-10 md:py-9">
 
-          <div className="mb-10">
+          {/* Header */}
+          <div className="mb-7 sm:mb-8 md:mb-9">
 
-            <h2 className="text-3xl font-bold text-slate-800">
+            <h2 className="text-2xl font-bold text-slate-800 sm:text-3xl">
               Welcome Back
             </h2>
 
-            <p className="mt-2 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-slate-500 sm:text-base">
               Sign in to continue to your dashboard.
             </p>
 
           </div>
 
-     <form
-  onSubmit={handleSubmit(onSubmit)}
-  className="space-y-6"
->
+
+          {/* =================================================
+              FORM
+          ================================================== */}
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="space-y-5 sm:space-y-6"
+          >
 
             {/* EMAIL */}
+            <div>
 
-        <div>
+              <label className="text-sm font-medium text-slate-700">
+                Email Address
+              </label>
 
-  <label className="text-sm font-medium text-slate-700">
-    Email Address
-  </label>
+              <div
+                className={`mt-2 flex h-12 w-full items-center rounded-xl border px-3 transition sm:h-14 sm:px-4 ${
+                  errors.email
+                    ? "border-red-400"
+                    : "border-slate-300 focus-within:border-[#1E3A8A]"
+                }`}
+              >
 
-  <div className="mt-2 flex items-center rounded-xl border border-slate-300 h-14 px-4 focus-within:border-[#1E3A8A] transition">
+                <Mail
+                  className="shrink-0 text-slate-400"
+                  size={19}
+                />
 
-    <Mail className="text-slate-400" size={20} />
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  autoComplete="email"
+                  {...register("email")}
+                  className="min-w-0 flex-1 bg-transparent px-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 sm:text-base"
+                />
 
-    <input
-      type="email"
-      placeholder="Enter your email"
-       autoComplete="email"
-      {...register("email")}
-      className="flex-1 bg-transparent outline-none px-3"
-    />
+              </div>
 
-  </div>
+              {errors.email && (
+                <p className="mt-1.5 text-xs text-red-500 sm:text-sm">
+                  {errors.email.message}
+                </p>
+              )}
 
-  {errors.email && (
-    <p className="mt-2 text-sm text-red-500">
-      {errors.email.message}
-    </p>
-  )}
+            </div>
 
-</div>
 
             {/* PASSWORD */}
+            <div>
 
-         <div>
+              <label className="text-sm font-medium text-slate-700">
+                Password
+              </label>
 
-  <label className="text-sm font-medium text-slate-700">
-    Password
-  </label>
+              <div
+                className={`mt-2 flex h-12 w-full items-center rounded-xl border px-3 transition sm:h-14 sm:px-4 ${
+                  errors.password
+                    ? "border-red-400"
+                    : "border-slate-300 focus-within:border-[#1E3A8A]"
+                }`}
+              >
 
-  <div className="mt-2 flex items-center rounded-xl border border-slate-300 h-14 px-4 focus-within:border-[#1E3A8A] transition">
+                <Lock
+                  className="shrink-0 text-slate-400"
+                  size={19}
+                />
 
-    <Lock
-      className="text-slate-400"
-      size={20}
-    />
+                <input
+                  type="password"
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  {...register("password")}
+                  className="min-w-0 flex-1 bg-transparent px-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 sm:text-base"
+                />
 
-    <input
-      type="password"
-      
-       autoComplete="current-password"
-      placeholder="Enter your password"
-      {...register("password")}
-      className="flex-1 bg-transparent outline-none px-3"
-    />
+              </div>
 
-  </div>
+              {errors.password && (
+                <p className="mt-1.5 text-xs text-red-500 sm:text-sm">
+                  {errors.password.message}
+                </p>
+              )}
 
-  {errors.password && (
-    <p className="mt-2 text-sm text-red-500">
-      {errors.password.message}
-    </p>
-  )}
+            </div>
 
-</div>
 
             {/* REMEMBER */}
+            <div className="flex items-center">
 
-            <div className="flex items-center justify-between">
-
-              <label className="flex items-center gap-2 text-sm text-slate-600">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
 
                 <input
                   type="checkbox"
-                  className="w-4 h-4"
+                  className="h-4 w-4 rounded border-slate-300 accent-[#1E3A8A]"
                 />
 
-                Remember me
+                <span>Remember me</span>
 
               </label>
 
             </div>
 
+
             {/* BUTTON */}
-<button
-  type="submit"
-  className="w-full h-14 rounded-xl bg-[#1E3A8A] hover:bg-[#17307A] text-white text-lg font-semibold transition-all duration-300"
->
+            <button
+              type="submit"
+              className="h-12 w-full rounded-xl bg-[#1E3A8A] text-sm font-semibold text-white transition-all duration-200 hover:bg-[#17307A] active:scale-[0.99] sm:h-14 sm:text-base"
+            >
               Sign In
             </button>
 
