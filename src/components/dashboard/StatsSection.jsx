@@ -28,7 +28,7 @@ function StatsSection({ dashboard }) {
   const stats = [
     {
       title: "Revenue",
-      value: formatCurrency(dashboard?.totalRevenue),
+      value: formatCurrency(dashboard.totalRevenue),
       subtitle: "Total completed sales",
       icon: TrendingUp,
       iconBg: "bg-blue-100",
@@ -38,7 +38,7 @@ function StatsSection({ dashboard }) {
 
     {
       title: "Products",
-      value: formatNumber(dashboard?.totalProducts),
+      value: formatNumber(dashboard.totalProducts),
       subtitle: "Inventory Items",
       icon: Package,
       iconBg: "bg-emerald-100",
@@ -49,9 +49,9 @@ function StatsSection({ dashboard }) {
     {
       title: "Total Stock",
       value: formatNumber(
-        dashboard?.totalStock ??
-          dashboard?.currentStockUnits ??
-          0
+        dashboard.totalStock ??
+        dashboard.currentStockUnits ??
+        0
       ),
       subtitle: "Current inventory quantity",
       icon: Boxes,
@@ -62,7 +62,7 @@ function StatsSection({ dashboard }) {
 
     {
       title: "Pending Salary",
-      value: formatCurrency(dashboard?.pendingSalary),
+      value: formatCurrency(dashboard.pendingSalary),
       subtitle: "Outstanding Payroll",
       icon: Wallet,
       iconBg: "bg-orange-100",
@@ -72,9 +72,7 @@ function StatsSection({ dashboard }) {
 
     {
       title: "Today's Payments",
-      value: formatCurrency(
-        dashboard?.todayPaymentTotal
-      ),
+      value: formatCurrency(dashboard.todayPaymentTotal),
       subtitle: "Processed Today",
       icon: Banknote,
       iconBg: "bg-violet-100",
